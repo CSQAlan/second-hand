@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: second-hand
+  
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/second_hand?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 50
+          max-idle: 10
+          min-idle: 2
+          max-wait: 3000ms
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL 日志以便调试
+
+# 安全/JWT 自定义配置
+jwt:
+  secret: c2Vjb25kLWhhbmQtdHJhZGluZy1zeXN0ZW0tY2xhc3NpYy1ndWlkZS1zZWNyZXQta2V5LTMyeWJpdHM=
+  expiration: 86400 # 24小时 (秒)
+  header: Authorization
+
+# 自定义异步线程池参数（秒杀写订单）
+seckill:
+  thread-pool:
+    core-pool-size: 10
+    max-pool-size: 50
+    queue-capacity: 1000
+    keep-alive-seconds: 60
+
+# DeepSeek 智能客服 API 配置
+deepseek:
+  api-key: your-api-key-here # 请在此处填入实际的 API Key
+  api-url: https://api.deepseek.com/v1/chat/completions
+  model: deepseek-chat

@@ -1,0 +1,23 @@
+# IDEs and Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# Build and dependency directories in subfolders
+**/target/
+**/build/
+**/dist/
+**/node_modules/
+**/.sts4-cache/
+
+# System Files
+.DS_Store
+Thumbs.db
+log/
+logs/
+*.log

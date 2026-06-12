@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 彩色日志格式 -->
+    <property name="CONSOLE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{50}) - [%X{traceId}] - %msg%n" />
+    <property name="FILE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - [%X{traceId}] - %msg%n" />
+
+    <property name="LOG_FILE_PATH" value="./logs" />
+
+    <!-- 控制台日志 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 滚动文件日志 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE_PATH}/second-hand.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 每天归档并压缩 -->
+            <fileNamePattern>${LOG_FILE_PATH}/second-hand-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 每个日志文件最大 10MB -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- 保存最近 30 天日志 -->
+            <maxHistory>30</maxHistory>
+            <!-- 日志文件总上限 3GB -->
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 开发环境日志输出级别 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+
+    <!-- 对特定包的日志级别进行配置 -->
+    <logger name="com.test.secondhand" level="DEBUG" />
+</configuration>
