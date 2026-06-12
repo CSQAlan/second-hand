@@ -30,6 +30,12 @@ spring:
           max-idle: 10
           min-idle: 2
           max-wait: 3000ms
+  
+  # Elasticsearch 配置
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 3s
+    socket-timeout: 5s
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -57,3 +63,9 @@ deepseek:
   api-key: your-api-key-here # 请在此处填入实际的 API Key
   api-url: https://api.deepseek.com/v1/chat/completions
   model: deepseek-chat
+
+# Embedding API 配置 (OpenAI或兼容接口，用于向量化搜索)
+embedding:
+  api-key: your-api-key-here # 请在此处填入实际的 API Key
+  api-url: https://api.openai.com/v1/embeddings
+  model: text-embedding-3-small

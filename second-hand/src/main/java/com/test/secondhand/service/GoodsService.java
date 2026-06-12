@@ -13,6 +13,8 @@ import java.util.List;
 @Service
 public class GoodsService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(GoodsService.class);
+
     @Autowired
     private GoodsMapper goodsMapper;
 
@@ -21,6 +23,9 @@ public class GoodsService {
 
     @Autowired
     private com.test.secondhand.mapper.UploadFileMapper uploadFileMapper;
+
+    @Autowired
+    private ElasticsearchService elasticsearchService;
 
     /**
      * 获取全部商品列表（在售状态 0）
@@ -55,6 +60,13 @@ public class GoodsService {
         goods.setStatus(0); // 默认在售
         goodsMapper.insert(goods);
         markImageAsUsed(goods.getImageUrl());
+
+        // 同步至 ES
+        try {
+            elasticsearchService.syncGoods(goods);
+        } catch (Exception e) {
+            log.error("[ES] 自动同步新商品文档失败，不阻碍主业务。ID: {}", goods.getId(), e);
+        }
     }
 
     /**
@@ -68,6 +80,16 @@ public class GoodsService {
             goodsMapper.updateById(goods);
             markImageAsUsed(goods.getImageUrl());
         });
+
+        // 同步至 ES
+        try {
+            Goods updated = goodsMapper.selectById(goods.getId());
+            if (updated != null) {
+                elasticsearchService.syncGoods(updated);
+            }
+        } catch (Exception e) {
+            log.error("[ES] 自动同步更新商品文档失败。ID: {}", goods.getId(), e);
+        }
     }
 
     /**
@@ -88,6 +110,21 @@ public class GoodsService {
      * 商品搜索
      */
     public List<Goods> searchGoods(String keyword, String category, String sortBy, int page, int size) {
+        // 1. 尝试使用 Elasticsearch 混合搜索
+        try {
+            List<Long> ids = elasticsearchService.searchGoodsIds(keyword, category, sortBy, page, size);
+            if (ids == null || ids.isEmpty()) {
+                return new java.util.ArrayList<>();
+            }
+            List<Goods> dbGoodsList = goodsMapper.selectBatchIds(ids);
+            // 保持 ES 返回的评分/排序顺序
+            dbGoodsList.sort(java.util.Comparator.comparingInt(item -> ids.indexOf(item.getId())));
+            return dbGoodsList;
+        } catch (Exception e) {
+            log.warn("[ES] Elasticsearch 检索服务异常，自动降级至数据库 SQL 模糊匹配查询。原因: {}", e.getMessage());
+        }
+
+        // 2. 数据库检索兜底逻辑
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<Goods>()
                 .eq(Goods::getStatus, 0); // 只查在售商品
 

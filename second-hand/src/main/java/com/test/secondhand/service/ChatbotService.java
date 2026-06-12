@@ -22,6 +22,9 @@ public class ChatbotService {
     @Autowired
     private KnowledgeBaseMapper knowledgeBaseMapper;
 
+    @Autowired
+    private GoodsService goodsService;
+
     @Value("${deepseek.api-key:your-api-key-here}")
     private String apiKey;
 
@@ -62,13 +65,36 @@ public class ChatbotService {
 
         log.info("[智能客服] 本地检索召回的参考背景: \n{}", context);
 
-        // 2. 检查 API Key 是否有效。如果为默认值，则直接走本地规则兜底，防止调用报错
-        if ("your-api-key-here".equalsIgnoreCase(apiKey) || apiKey.trim().isEmpty()) {
-            log.warn("[智能客服] DeepSeek API Key 未配置，将降级为本地规则直接解答");
-            return formatFallbackResponse(context, userQuestion);
+        // 2. 检索商品数据库/ES，为 AI 提供实时在售商品信息
+        List<com.test.secondhand.entity.Goods> matchedGoods = new ArrayList<>();
+        try {
+            // 通过语义或全文搜索，为客服检索关联商品
+            matchedGoods = goodsService.searchGoods(userQuestion, null, "views", 1, 3);
+        } catch (Exception e) {
+            log.error("[智能客服] 关联在售商品检索异常", e);
         }
 
-        // 3. 构建 Prompt 并调用 DeepSeek 接口 (Generation)
+        StringBuilder goodsContextBuilder = new StringBuilder();
+        if (matchedGoods != null && !matchedGoods.isEmpty()) {
+            goodsContextBuilder.append("【实时系统在售商品推荐】:\n");
+            for (com.test.secondhand.entity.Goods g : matchedGoods) {
+                goodsContextBuilder.append("- ").append(g.getName())
+                        .append("，价格: ").append(g.getPrice()).append("元")
+                        .append("，成色: ").append(g.getCondition() != null ? g.getCondition() : "未知")
+                        .append("，卖家介绍: ").append(g.getDescription())
+                        .append("\n");
+            }
+        }
+        String goodsContext = goodsContextBuilder.toString();
+        log.info("[智能客服] 关联召回的在售商品推荐背景: \n{}", goodsContext);
+
+        // 3. 检查 API Key 是否有效。如果为默认值，则直接走本地规则和商品降级显示，防止调用报错
+        if ("your-api-key-here".equalsIgnoreCase(apiKey) || apiKey.trim().isEmpty()) {
+            log.warn("[智能客服] DeepSeek API Key 未配置，将降级为本地小助手模式");
+            return formatFallbackResponse(context, goodsContext, userQuestion);
+        }
+
+        // 4. 构建 Prompt 并调用 DeepSeek 接口 (Generation)
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -79,12 +105,18 @@ public class ChatbotService {
             requestBody.put("model", modelName);
             
             List<Map<String, String>> messages = new ArrayList<>();
-            // System 角色输入背景知识
+            // System 角色输入背景知识及推荐商品信息
+            String systemPrompt = "你是一个专业的二手交易系统智能客服助手。请结合下述系统规则背景知识和实时在售商品推荐，友好、精简、专业地回答用户的提问，并根据用户诉求向其推荐平台内的二手商品。\n\n" +
+                    "【系统背景规则】\n" + context + "\n\n";
+            if (!goodsContext.isEmpty()) {
+                systemPrompt += goodsContext + "\n" +
+                        "【商品推荐准则】：如果检索出的商品与用户的购买兴趣高度匹配，请极力向用户宣传并推荐这些在售商品，鼓励其点击下单！\n\n";
+            }
+            systemPrompt += "请注意：如果规则和商品中没有相关信息，请根据普通二手交易常识解答。字数保持在 200 字以内。";
+
             Map<String, String> systemMessage = new HashMap<>();
             systemMessage.put("role", "system");
-            systemMessage.put("content", "你是一个专业的二手交易系统智能客服助手。请结合下述系统规则知识，友好、精简地回答用户的提问。\n\n" +
-                    "【系统背景知识】\n" + context + "\n" +
-                    "请注意：如果上述知识中没有相关信息，请根据普通二手交易常识予以解答。字数保持在150字以内。");
+            systemMessage.put("content", systemPrompt);
             messages.add(systemMessage);
 
             // User 角色输入用户提问
@@ -105,12 +137,12 @@ public class ChatbotService {
                 return answer.trim();
             } else {
                 log.error("[智能客服] DeepSeek API 响应异常: {}", response.getStatusCode());
-                return formatFallbackResponse(context, userQuestion);
+                return formatFallbackResponse(context, goodsContext, userQuestion);
             }
 
         } catch (Exception e) {
             log.error("[智能客服] 联网调用 DeepSeek 异常，转本地降级回答", e);
-            return formatFallbackResponse(context, userQuestion);
+            return formatFallbackResponse(context, goodsContext, userQuestion);
         }
     }
 
@@ -127,12 +159,19 @@ public class ChatbotService {
     }
 
     /**
-     * 本地规则降级解答格式化
+     * 本地规则及商品匹配降级解答格式化
      */
-    private String formatFallbackResponse(String context, String question) {
+    private String formatFallbackResponse(String context, String goodsContext, String question) {
+        StringBuilder response = new StringBuilder();
         if (context.contains("答：")) {
-            return "【本地小助手提示：检测到当前处于本地解答模式】\n根据我们系统知识库的记录，相关的规则解答如下：\n\n" + context;
+            response.append("【本地小助手提示：检测到当前处于本地解答模式】\n根据我们系统知识库的记录，相关的规则解答如下：\n\n").append(context).append("\n\n");
+        } else {
+            response.append("【本地小助手提示：未配置 AI 接口】\n抱歉，小助手没能找到关于“").append(question).append("”的系统匹配规则条目。\n\n");
         }
-        return "【本地小助手提示：未配置 AI 接口】\n抱歉，小助手没能找到关于“" + question + "”的系统匹配条目。如果是关于“下单、秒杀、拍卖”等基本规则，您可以尝试输入相关词提问。";
+        
+        if (goodsContext != null && !goodsContext.isEmpty()) {
+            response.append("但我从平台商品库中为您匹配到了以下在售相关好物：\n").append(goodsContext);
+        }
+        return response.toString();
     }
 }
