@@ -5,11 +5,14 @@ import com.test.secondhand.common.Result;
 import com.test.secondhand.entity.Review;
 import com.test.secondhand.security.UserContext;
 import com.test.secondhand.service.ReviewService;
+import com.test.secondhand.vo.ReviewStatsVO;
+import com.test.secondhand.vo.ReviewVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/review")
@@ -33,16 +36,28 @@ public class ReviewController {
      * 获取用户收到的评价
      */
     @GetMapping("/user/{userId}")
-    public Result<List<Review>> getUserReviews(@PathVariable Long userId) {
-        return Result.success(reviewService.getUserReviews(userId));
+    public Result<List<ReviewVO>> getUserReviews(@PathVariable Long userId) {
+        List<Review> reviews = reviewService.getUserReviews(userId);
+        List<ReviewVO> voList = reviews.stream()
+                .map(ReviewVO::from)
+                .collect(Collectors.toList());
+        return Result.success(voList);
     }
 
     /**
      * 获取用户评价统计
      */
     @GetMapping("/stats/{userId}")
-    public Result<Map<String, Object>> getUserReviewStats(@PathVariable Long userId) {
-        return Result.success(reviewService.getUserReviewStats(userId));
+    public Result<ReviewStatsVO> getUserReviewStats(@PathVariable Long userId) {
+        Map<String, Object> stats = reviewService.getUserReviewStats(userId);
+
+        ReviewStatsVO vo = new ReviewStatsVO();
+        vo.setAverageRating((Double) stats.get("averageRating"));
+        vo.setTotalReviews((Integer) stats.get("totalReviews"));
+        vo.setGoodRate((Integer) stats.get("goodRate"));
+        vo.setRatingDistribution((Map<Integer, Long>) stats.get("ratingDistribution"));
+
+        return Result.success(vo);
     }
 
     /**
@@ -50,14 +65,13 @@ public class ReviewController {
      */
     @GetMapping("/order/{orderId}")
     public Result<?> getOrderReview(@PathVariable Long orderId) {
-        Long userId = UserContext.getUserId();
         // 获取买家评价和卖家评价
         Review buyerReview = reviewService.getOrderReview(orderId, 1);
         Review sellerReview = reviewService.getOrderReview(orderId, 2);
 
-        Map<String, Review> result = Map.of(
-                "buyerReview", buyerReview,
-                "sellerReview", sellerReview);
+        Map<String, ReviewVO> result = Map.of(
+                "buyerReview", ReviewVO.from(buyerReview),
+                "sellerReview", ReviewVO.from(sellerReview));
         return Result.success(result);
     }
 }

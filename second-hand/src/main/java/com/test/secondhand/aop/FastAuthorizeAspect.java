@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import org.aspectj.lang.reflect.MethodSignature;
+import java.lang.reflect.Method;
 import java.util.Collections;
 
 @Aspect
@@ -48,8 +50,8 @@ public class FastAuthorizeAspect {
 
     @Before("@within(com.test.secondhand.annotation.FastAuthorize) || @annotation(com.test.secondhand.annotation.FastAuthorize)")
     public void doBefore(JoinPoint joinPoint) {
-        org.aspectj.lang.reflect.MethodSignature signature = (org.aspectj.lang.reflect.MethodSignature) joinPoint.getSignature();
-        java.lang.reflect.Method method = signature.getMethod();
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
 
         FastAuthorize fastAuthorize = method.getAnnotation(FastAuthorize.class);
         if (fastAuthorize == null) {

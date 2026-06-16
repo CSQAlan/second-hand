@@ -8,6 +8,8 @@ import com.test.secondhand.entity.User;
 import com.test.secondhand.mapper.ChatMessageMapper;
 import com.test.secondhand.mapper.UserMapper;
 import com.test.secondhand.security.UserContext;
+import com.test.secondhand.vo.ChatContactVO;
+import com.test.secondhand.vo.ChatMessageVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,24 +31,29 @@ public class ChatController {
      * 获取与特定用户的聊天历史记录
      */
     @GetMapping("/history")
-    public Result<List<ChatMessage>> getHistory(@RequestParam Long receiverId) {
+    public Result<List<ChatMessageVO>> getHistory(@RequestParam Long receiverId) {
         Long myId = UserContext.getUserId();
-        
+
         List<ChatMessage> list = chatMessageMapper.selectList(
                 new LambdaQueryWrapper<ChatMessage>()
                         .and(w -> w.eq(ChatMessage::getSenderId, myId).eq(ChatMessage::getReceiverId, receiverId))
                         .or(w -> w.eq(ChatMessage::getSenderId, receiverId).eq(ChatMessage::getReceiverId, myId))
                         .orderByAsc(ChatMessage::getCreateTime)
         );
-        
-        return Result.success(list);
+
+        List<ChatMessageVO> voList = new ArrayList<>();
+        for (ChatMessage msg : list) {
+            voList.add(ChatMessageVO.from(msg));
+        }
+
+        return Result.success(voList);
     }
 
     /**
      * 发送聊天消息
      */
     @PostMapping("/send")
-    public Result<ChatMessage> sendMessage(@RequestBody ChatMessage message) {
+    public Result<ChatMessageVO> sendMessage(@RequestBody ChatMessage message) {
         if (message.getReceiverId() == null || message.getContent() == null || message.getContent().trim().isEmpty()) {
             return Result.error("接收者或消息内容不能为空");
         }
@@ -55,18 +62,18 @@ public class ChatController {
         message.setSenderId(myId);
         message.setIsRead(0); // 默认为未读
         message.setCreateTime(LocalDateTime.now());
-        
+
         chatMessageMapper.insert(message);
-        return Result.success(message);
+        return Result.success(ChatMessageVO.from(message));
     }
 
     /**
      * 获取最近聊天联系人列表
      */
     @GetMapping("/contacts")
-    public Result<List<Map<String, Object>>> getContacts() {
+    public Result<List<ChatContactVO>> getContacts() {
         Long myId = UserContext.getUserId();
-        
+
         // 查询与当前用户相关的所有聊天消息，并按时间倒序排列
         List<ChatMessage> myMsgs = chatMessageMapper.selectList(
                 new LambdaQueryWrapper<ChatMessage>()
@@ -86,7 +93,7 @@ public class ChatController {
         }
 
         // 装配联系人详细信息与未读消息数
-        List<Map<String, Object>> contactList = new ArrayList<>();
+        List<ChatContactVO> contactList = new ArrayList<>();
         for (Map.Entry<Long, ChatMessage> entry : latestMsgMap.entrySet()) {
             Long contactId = entry.getKey();
             ChatMessage latestMsg = entry.getValue();
@@ -102,14 +109,13 @@ public class ChatController {
                             .eq(ChatMessage::getIsRead, 0)
             );
 
-            Map<String, Object> contact = new HashMap<>();
-            contact.put("id", user.getId());
-            contact.put("username", user.getUsername());
-            contact.put("nickname", user.getNickname());
-            contact.put("avatar", user.getAvatar());
-            contact.put("latestMessage", latestMsg.getContent());
-            contact.put("latestTime", latestMsg.getCreateTime());
-            contact.put("unreadCount", unreadCount);
+            ChatContactVO contact = new ChatContactVO();
+            contact.setUserId(user.getId());
+            contact.setNickname(user.getNickname());
+            contact.setAvatar(user.getAvatar());
+            contact.setLastMessage(latestMsg.getContent());
+            contact.setLastMessageTime(latestMsg.getCreateTime());
+            contact.setUnreadCount(unreadCount.intValue());
 
             contactList.add(contact);
         }

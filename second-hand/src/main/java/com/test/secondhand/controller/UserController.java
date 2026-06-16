@@ -5,10 +5,11 @@ import com.test.secondhand.common.Result;
 import com.test.secondhand.entity.User;
 import com.test.secondhand.security.UserContext;
 import com.test.secondhand.service.UserService;
+import com.test.secondhand.vo.UserPublicVO;
+import com.test.secondhand.vo.UserStatsVO;
+import com.test.secondhand.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -22,12 +23,11 @@ public class UserController {
      */
     @GetMapping("/profile")
     @FastAuthorize(required = true)
-    public Result<User> getProfile() {
+    public Result<UserVO> getProfile() {
         Long userId = UserContext.getUserId();
         User user = userService.getUserProfile(userId);
-        // 清除密码字段
-        user.setPassword(null);
-        return Result.success(user);
+        UserVO vo = UserVO.from(user);
+        return Result.success(vo);
     }
 
     /**
@@ -46,16 +46,33 @@ public class UserController {
      */
     @GetMapping("/stats")
     @FastAuthorize(required = true)
-    public Result<Map<String, Object>> getStats() {
+    public Result<UserStatsVO> getStats() {
         Long userId = UserContext.getUserId();
-        return Result.success(userService.getUserStats(userId));
+        java.util.Map<String, Object> stats = userService.getUserStats(userId);
+
+        UserStatsVO vo = new UserStatsVO();
+        vo.setPublishCount((Long) stats.get("publishCount"));
+        vo.setSellCount((Long) stats.get("sellCount"));
+        vo.setBuyCount((Long) stats.get("buyCount"));
+        vo.setReviewCount((Long) stats.get("reviewCount"));
+
+        return Result.success(vo);
     }
 
     /**
      * 获取用户公开信息
      */
     @GetMapping("/{userId}/public")
-    public Result<Map<String, Object>> getPublicInfo(@PathVariable Long userId) {
-        return Result.success(userService.getUserPublicInfo(userId));
+    public Result<UserPublicVO> getPublicInfo(@PathVariable Long userId) {
+        java.util.Map<String, Object> info = userService.getUserPublicInfo(userId);
+
+        UserPublicVO vo = new UserPublicVO();
+        vo.setId((Long) info.get("id"));
+        vo.setNickname((String) info.get("nickname"));
+        vo.setAvatar((String) info.get("avatar"));
+        vo.setBio((String) info.get("bio"));
+        vo.setCreateTime((java.time.LocalDateTime) info.get("createTime"));
+
+        return Result.success(vo);
     }
 }
