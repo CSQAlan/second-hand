@@ -93,6 +93,27 @@ public class GoodsService {
     }
 
     /**
+     * 将数据库中所有的在售商品全量同步到 Elasticsearch 向量库
+     */
+    public int syncAllGoodsToEs() {
+        List<Goods> allActiveGoods = goodsMapper.selectList(
+                new LambdaQueryWrapper<Goods>().eq(Goods::getStatus, 0)
+        );
+        int successCount = 0;
+        log.info("[ES] 开始全量同步商品到 Elasticsearch，共计 {} 个商品...", allActiveGoods.size());
+        for (Goods g : allActiveGoods) {
+            try {
+                elasticsearchService.syncGoods(g);
+                successCount++;
+            } catch (Exception e) {
+                log.error("[ES] 全量同步商品失败，ID: {}，名称: {}", g.getId(), g.getName(), e);
+            }
+        }
+        log.info("[ES] 全量同步完成，成功同步 {}/{} 个商品", successCount, allActiveGoods.size());
+        return successCount;
+    }
+
+    /**
      * 将用户上传的图片文件在表里标记为"已使用"，避免定时垃圾任务将其删除
      */
     private void markImageAsUsed(String imageUrl) {

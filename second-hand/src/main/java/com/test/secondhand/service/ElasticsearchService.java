@@ -9,6 +9,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.test.secondhand.entity.Goods;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,6 +26,9 @@ public class ElasticsearchService {
 
     @Autowired
     private EmbeddingService embeddingService;
+
+    @Value("${embedding.dimensions:768}")
+    private int dimensions;
 
     private static final String INDEX_NAME = "goods";
 
@@ -81,7 +85,7 @@ public class ElasticsearchService {
                         .properties("sellerId", p -> p.long_(l -> l))
                         .properties("createTime", p -> p.date(d -> d))
                         .properties("goodsVector", p -> p.denseVector(dv -> dv
-                                .dims(1536)
+                                .dims(dimensions)
                                 .index(true)
                                 .similarity(co.elastic.clients.elasticsearch._types.mapping.DenseVectorSimilarity.Cosine)
                         ))

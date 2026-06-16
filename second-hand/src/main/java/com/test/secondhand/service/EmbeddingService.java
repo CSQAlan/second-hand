@@ -24,6 +24,9 @@ public class EmbeddingService {
     @Value("${embedding.model:text-embedding-3-small}")
     private String modelName;
 
+    @Value("${embedding.dimensions:768}")
+    private int dimensions;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -75,11 +78,11 @@ public class EmbeddingService {
     }
 
     /**
-     * 生成确定性的、单位化的 1536 维模拟 Embedding 向量。
+     * 生成确定性的、单位化的模拟 Embedding 向量。
      * 使用文本的哈希值作为随机种子，保证相同的文本总是能生成相同的向量，方便无网络状态下本地开发和测试。
      */
     public float[] getMockEmbedding(String text) {
-        int dimension = 1536;
+        int dimension = dimensions;
         float[] vector = new float[dimension];
         long seed = (text == null) ? 0 : text.hashCode();
         

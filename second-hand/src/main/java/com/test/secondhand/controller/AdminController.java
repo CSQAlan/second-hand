@@ -6,6 +6,7 @@ import com.test.secondhand.common.Result;
 import com.test.secondhand.entity.Goods;
 import com.test.secondhand.entity.Order;
 import com.test.secondhand.entity.SeckillGoods;
+import com.test.secondhand.entity.User;
 import com.test.secondhand.mapper.GoodsMapper;
 import com.test.secondhand.mapper.OrderMapper;
 import com.test.secondhand.mapper.SeckillGoodsMapper;
@@ -146,6 +147,50 @@ public class AdminController {
         stats.put("barChart", barChart);
 
         return Result.success(stats);
+    }
+
+    @GetMapping("/operations")
+    public Result<List<Map<String, Object>>> getPlatformOperations() {
+        // 1. 严格控制权限：非管理员拒绝访问
+        if (!"ROLE_ADMIN".equals(UserContext.getRole())) {
+            return Result.error(403, "无权访问平台操作日志");
+        }
+
+        try {
+            // 查询所有订单，按创建时间倒序排前 200 条作为最近的交易操作流水
+            List<Order> orders = orderMapper.selectList(
+                    new LambdaQueryWrapper<Order>()
+                            .orderByDesc(Order::getCreateTime)
+                            .last("LIMIT 200")
+            );
+
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Order o : orders) {
+                Map<String, Object> op = new HashMap<>();
+                op.put("orderNo", o.getOrderNo());
+                op.put("price", o.getPrice());
+                op.put("type", o.getType()); // 0-普通购买, 1-秒杀抢购, 2-拍卖成交
+                op.put("status", o.getStatus());
+                op.put("createTime", o.getCreateTime());
+
+                // 查询商品名称
+                Goods goods = goodsMapper.selectById(o.getGoodsId());
+                op.put("goodsName", goods != null ? goods.getName() : "未知商品 (已删除)");
+
+                // 查询买家名称
+                User buyer = userMapper.selectById(o.getBuyerId());
+                op.put("buyerName", buyer != null ? (buyer.getNickname() != null ? buyer.getNickname() : buyer.getUsername()) : "未知买家");
+
+                // 查询卖家名称
+                User seller = userMapper.selectById(o.getSellerId());
+                op.put("sellerName", seller != null ? (seller.getNickname() != null ? seller.getNickname() : seller.getUsername()) : "未知卖家");
+
+                result.add(op);
+            }
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error("获取操作日志异常: " + e.getMessage());
+        }
     }
 
     private Map<String, Object> createPieItem(String name, int value) {

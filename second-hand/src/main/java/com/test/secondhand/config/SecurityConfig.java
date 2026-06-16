@@ -47,6 +47,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 允许匿名访问静态上传图片文件
                 .requestMatchers("/uploads/**").permitAll()
+                // 放行上传图片接口以解决跨域 Preflight OPTIONS 403 阻断（实际通过 Controller 的 @FastAuthorize 注解校验登录）
+                .requestMatchers("/api/upload").permitAll()
                 // 用户注册与登录，放行
                 .requestMatchers("/api/auth/**").permitAll()
                 // 商品流式列表与详情，放行

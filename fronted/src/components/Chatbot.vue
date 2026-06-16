@@ -18,16 +18,20 @@
           <el-button type="text" icon="Close" @click="toggleChat" class="close-btn" />
         </div>
 
-        <!-- 聊天记录区域 -->
-        <div class="chat-messages" ref="msgContainer">
+        <!-- 聊天记录区域 (添加点击事件委托) -->
+        <div class="chat-messages" ref="msgContainer" @click="handleChatClick">
           <div 
             v-for="(msg, index) in messages" 
             :key="index" 
             class="message-row"
             :class="msg.role === 'user' ? 'row-user' : 'row-bot'"
           >
-            <div class="message-bubble" :class="msg.role === 'user' ? 'bubble-user' : 'bubble-bot'">
-              {{ msg.content }}
+            <!-- 渲染 v-html 以解析 RAG 知识库及商品链接 -->
+            <div 
+              class="message-bubble" 
+              :class="msg.role === 'user' ? 'bubble-user' : 'bubble-bot'"
+              v-html="msg.content"
+            >
             </div>
           </div>
           <div v-if="loading" class="message-row row-bot">
@@ -58,8 +62,10 @@
 <script setup>
 import { ref, reactive, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
+const router = useRouter()
 const isOpen = ref(false)
 const loading = ref(false)
 const inputMsg = ref('')
@@ -71,6 +77,17 @@ const messages = reactive([
     content: '您好！我是闲置交易系统的 AI 客服小助手。我可以帮您解答有关“系统抢购公平性、秒杀未支付订单时效、拍卖出价与结标交易发货”等问题。请随时提问！'
   }
 ])
+
+const handleChatClick = (e) => {
+  const link = e.target.closest('.chat-goods-link')
+  if (link) {
+    e.preventDefault()
+    const href = link.getAttribute('href')
+    if (href) {
+      router.push(href)
+    }
+  }
+}
 
 const toggleChat = () => {
   isOpen.value = !isOpen.value
@@ -257,5 +274,18 @@ const handleSend = async () => {
 .slide-enter-from, .slide-leave-to {
   transform: translateY(30px) scale(0.9);
   opacity: 0;
+}
+
+/* 智能客服中的商品超链接样式 */
+:deep(.chat-goods-link) {
+  color: #818cf8 !important;
+  text-decoration: underline !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: color 0.2s !important;
+}
+
+:deep(.chat-goods-link:hover) {
+  color: #a5b4fc !important;
 }
 </style>

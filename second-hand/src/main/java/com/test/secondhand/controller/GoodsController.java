@@ -46,6 +46,12 @@ public class GoodsController {
         return Result.success(goodsService.searchGoods(keyword, category, sortBy, page, size));
     }
 
+    @GetMapping("/sync")
+    public Result<String> sync() {
+        int count = goodsService.syncAllGoodsToEs();
+        return Result.success("成功全量同步 " + count + " 个商品到 Elasticsearch 向量检索库！");
+    }
+
     @GetMapping("/detail/{id}")
     public Result<Map<String, Object>> detail(@PathVariable Long id) {
         Goods goods = goodsService.getGoodsById(id);

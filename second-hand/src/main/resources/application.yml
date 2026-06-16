@@ -60,12 +60,13 @@ seckill:
 
 # DeepSeek 智能客服 API 配置
 deepseek:
-  api-key: your-api-key-here # 请在此处填入实际的 API Key
+  api-key: sk-3f996810c5234ba78698f392d9eb6865 # 请在此处填入实际的 API Key
   api-url: https://api.deepseek.com/v1/chat/completions
   model: deepseek-chat
 
 # Embedding API 配置 (OpenAI或兼容接口，用于向量化搜索)
 embedding:
-  api-key: your-api-key-here # 请在此处填入实际的 API Key
-  api-url: https://api.openai.com/v1/embeddings
-  model: text-embedding-3-small
+  api-key: ollama # 绕过非空校验
+  api-url: http://localhost:11434/v1/embeddings
+  model: nomic-embed-text
+  dimensions: 768

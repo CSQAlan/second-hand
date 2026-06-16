@@ -1,24 +1,34 @@
 <template>
   <div class="seckill-container">
-    <div class="header-banner glass-card text-glow-seckill">
+    <!-- 极光氛围顶部 Banner -->
+    <div class="header-banner glass-card aurora-banner">
+      <div class="aurora-glow-effect"></div>
       <div class="banner-content">
-        <el-icon size="32" color="#10b981"><Lightning /></el-icon>
-        <h2 class="banner-title text-gradient">限时秒杀抢购区</h2>
-        <p class="banner-desc">高并发高可靠保障，每位用户限购 1 件！</p>
+        <div class="title-with-icon">
+          <el-icon size="36" class="lightning-glow"><Lightning /></el-icon>
+          <h2 class="banner-title text-gradient-aurora">星闪臻选 · Aurora Drop</h2>
+        </div>
+        <p class="banner-desc">以先锋姿态，瞬息问鼎极值。极速通道限额派送，每位阁下仅限结缘一件。</p>
       </div>
-      <el-button type="success" icon="Plus" @click="publishDialog = true">
-        发布秒杀抢购
+      <el-button class="publish-aurora-btn" @click="publishDialog = true">
+        <el-icon><Plus /></el-icon> 开启闪购企划
       </el-button>
     </div>
 
-    <!-- 秒杀商品列表 -->
+    <!-- 闪购商品列表 -->
     <div v-loading="loading" class="seckill-grid">
-      <el-empty v-if="seckillList.length === 0" description="目前没有秒杀活动，去发布一个试试吧！" />
+      <el-empty v-if="seckillList.length === 0" description="当前暂无臻选放送，期待您的非凡创意。" />
       
-      <div v-for="item in seckillList" :key="item.id" class="seckill-card glass-card" :class="{ 'ended-card': item.ended }">
+      <div 
+        v-for="item in seckillList" 
+        :key="item.id" 
+        class="seckill-card aurora-card glass-card" 
+        :class="{ 'ended-card': item.ended, 'soldout-card': item.stock === 0 }"
+      >
         <div class="card-image-box">
-          <img :src="item.imageUrl || defaultImage" alt="秒杀图" class="seckill-img" />
+          <img :src="item.imageUrl || defaultImage" alt="臻选图" class="seckill-img" />
           <div class="status-overlay" :class="statusClass(item)">
+            <span class="status-dot"></span>
             {{ statusText(item) }}
           </div>
         </div>
@@ -28,32 +38,36 @@
           <p class="item-desc">{{ item.description }}</p>
           
           <div class="price-row">
-            <span class="seckill-price">￥{{ item.seckillPrice }}</span>
-            <span class="original-price">￥{{ item.originalPrice }}</span>
+            <span class="seckill-price-symbol">￥</span>
+            <span class="seckill-price">{{ item.seckillPrice }}</span>
+            <span class="original-price">原价 ￥{{ item.originalPrice }}</span>
           </div>
 
-          <!-- 库存进度条 -->
+          <!-- 库存状态与进度条 -->
           <div class="stock-info">
             <div class="stock-label">
-              <span>库存剩余: {{ item.stock }} 件</span>
+              <span>余量余存: {{ item.stock }} 件</span>
+              <span class="stock-percentage-text" v-if="item.stock > 0">极速去化中</span>
+              <span class="stock-percentage-text text-danger" v-else>名花有主</span>
             </div>
-            <el-progress 
-              :percentage="calculateStockPercent(item.stock)" 
-              :status="item.stock === 0 ? 'exception' : 'success'"
-              :show-text="false"
-            />
+            <div class="custom-progress-track">
+              <div 
+                class="custom-progress-bar" 
+                :style="{ width: calculateStockPercent(item.stock) + '%' }"
+                :class="{ 'pulse-progress': item.stock > 0 && item.stock <= 3, 'empty-progress': item.stock === 0 }"
+              ></div>
+            </div>
           </div>
 
           <!-- 倒计时面板 -->
-          <div class="timer-box" v-if="!item.ended">
-            <el-icon><Timer /></el-icon>
+          <div class="timer-box" v-if="!item.ended" :class="{ 'upcoming-timer': !item.started }">
+            <el-icon class="timer-icon"><Timer /></el-icon>
             <span class="timer-text">{{ countdownText(item) }}</span>
           </div>
 
           <div class="action-row">
             <el-button 
-              type="danger" 
-              class="seckill-btn"
+              class="seckill-btn aurora-btn"
               :disabled="!item.started || item.ended || item.stock === 0"
               @click="openVerifyDialog(item)"
               :loading="buyingId === item.goodsId"
@@ -65,10 +79,17 @@
       </div>
     </div>
 
-    <!-- 滑块验证码弹窗（高并发防刷） -->
-    <el-dialog v-model="verifyDialog" title="安全验证" width="360px" :close-on-click-modal="false" align-center>
+    <!-- 密钥锁合校验弹窗 -->
+    <el-dialog 
+      v-model="verifyDialog" 
+      title="密钥锁合安全校验" 
+      width="380px" 
+      :close-on-click-modal="false" 
+      align-center
+      class="verify-aurora-dialog"
+    >
       <div class="slider-verify-box">
-        <p class="verify-tip">请向右滑动滑块以完成安全抢购校验</p>
+        <p class="verify-tip">请拖拽核心极光解锁滑块，完成本次结缘抢占</p>
         <div class="slider-track" ref="sliderTrack">
           <div class="slider-bg" :style="{ width: sliderLeft + 'px' }"></div>
           <div 
@@ -77,35 +98,35 @@
             @mousedown="onDragStart"
             @touchstart="onDragStart"
           >
-            <el-icon><ArrowRightBold v-if="!isVerified" /><Check v-else /></el-icon>
+            <el-icon class="handle-icon"><ArrowRightBold v-if="!isVerified" /><Check v-else /></el-icon>
           </div>
-          <div class="slider-text" v-show="sliderLeft < 100">向右拖动完成验证</div>
+          <div class="slider-text" v-show="sliderLeft < 100">拖动极光核以校验</div>
         </div>
       </div>
     </el-dialog>
 
-    <!-- 发布秒杀对话框 -->
-    <el-dialog v-model="publishDialog" title="发起秒杀活动" width="500px">
+    <!-- 发起闪购活动对话框 -->
+    <el-dialog v-model="publishDialog" title="开启全新闪购企划" width="500px" class="publish-aurora-dialog">
       <el-form :model="publishForm" :rules="publishRules" ref="formRef" label-position="top">
-        <el-form-item label="关联闲置商品ID" prop="goodsId">
-          <el-input v-model="publishForm.goodsId" placeholder="请输入您已发布的常规商品ID" />
+        <el-form-item label="关联二手闲置商品编号" prop="goodsId">
+          <el-input v-model="publishForm.goodsId" placeholder="请输入您已发布常规闲置的商品ID" />
         </el-form-item>
 
-        <el-form-item label="秒杀价格 (元)" prop="seckillPrice">
-          <el-input-number v-model="publishForm.seckillPrice" :precision="2" :step="5" :min="0.01" style="width: 100%" />
+        <el-form-item label="星闪出货价格 (元)" prop="seckillPrice">
+          <el-input-number v-model="publishForm.seckillPrice" :precision="2" :step="10" :min="0.01" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item label="抢购库存数" prop="stock">
+        <el-form-item label="限额出货数量 (件)" prop="stock">
           <el-input-number v-model="publishForm.stock" :min="1" :step="1" style="width: 100%" />
         </el-form-item>
 
-        <el-form-item label="活动时间范围" prop="timeRange">
+        <el-form-item label="闪售投放时间周期" prop="timeRange">
           <el-date-picker
             v-model="publishForm.timeRange"
             type="datetimerange"
             range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
+            start-placeholder="投放起始时间"
+            end-placeholder="投放截止时间"
             style="width: 100%"
             value-format="YYYY-MM-DDTHH:mm:ss"
           />
@@ -113,8 +134,8 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="publishDialog = false">取 消</el-button>
-          <el-button type="primary" @click="submitPublish" :loading="publishing">确 认 发 布</el-button>
+          <el-button @click="publishDialog = false" class="cancel-aurora-btn">暂 缓</el-button>
+          <el-button type="primary" @click="submitPublish" :loading="publishing" class="confirm-aurora-btn">启 动 企 划</el-button>
         </div>
       </template>
     </el-dialog>
@@ -194,10 +215,10 @@ const updateTimes = () => {
 
 // 状态覆盖层样式与文本
 const statusText = (item) => {
-  if (item.ended) return '活动已结束'
-  if (!item.started) return '即将开始'
-  if (item.stock === 0) return '已抢光'
-  return '抢购中'
+  if (item.ended) return '尘埃落定'
+  if (!item.started) return '静候破晓'
+  if (item.stock === 0) return '已被臻藏'
+  return '星闪跃动中'
 }
 
 const statusClass = (item) => {
@@ -208,10 +229,10 @@ const statusClass = (item) => {
 }
 
 const btnText = (item) => {
-  if (item.ended) return '已结束'
-  if (!item.started) return '即将开抢'
-  if (item.stock === 0) return '已抢光'
-  return '立 即 抢 购'
+  if (item.ended) return '已 结 束'
+  if (!item.started) return '静 候 破 晓'
+  if (item.stock === 0) return '已被臻藏'
+  return '即 刻 结 缘'
 }
 
 const calculateStockPercent = (stock) => {
@@ -381,95 +402,233 @@ onUnmounted(() => {
 .seckill-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
+  animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.header-banner {
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 极光风格 Banner */
+.aurora-banner {
+  position: relative;
+  overflow: hidden;
+  padding: 36px 40px;
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.85) 0%, rgba(10, 13, 19, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 32px;
 }
 
-.banner-content {
+.aurora-glow-effect {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+  pointer-events: none;
+  animation: rotateGlow 20s linear infinite;
+}
+
+@keyframes rotateGlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.title-with-icon {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 16px;
 }
 
-.banner-title {
-  font-size: 22px;
-  font-weight: 700;
+.lightning-glow {
+  color: #10b981;
+  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+  animation: pulseIcon 2.5s infinite;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.8)); }
+}
+
+.text-gradient-aurora {
+  background: linear-gradient(135deg, #a7f3d0 0%, #10b981 50%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .banner-desc {
   font-size: 13px;
   color: var(--text-muted);
+  margin-top: 6px;
+  letter-spacing: 0.03em;
 }
 
+/* 开启闪购企划按钮 */
+.publish-aurora-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+  color: #a7f3d0 !important;
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  height: auto;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.publish-aurora-btn:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.7) !important;
+  color: #fff !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  transform: translateY(-2px);
+}
+
+/* 商品网格 */
 .seckill-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 32px;
 }
 
-.seckill-card {
+/* 商品卡片 */
+.aurora-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   padding: 0;
-  height: 440px;
+  height: 460px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.7) 0%, rgba(10, 13, 19, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aurora-card:hover {
+  border-color: rgba(16, 185, 129, 0.25);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.1);
 }
 
 .ended-card {
-  opacity: 0.6;
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+
+.soldout-card {
+  opacity: 0.85;
 }
 
 .card-image-box {
   position: relative;
-  height: 180px;
+  height: 200px;
   overflow: hidden;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .seckill-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.seckill-card:hover .seckill-img {
-  transform: scale(1.05);
+.aurora-card:hover .seckill-img {
+  transform: scale(1.06);
 }
 
+/* 浮动状态标签 */
 .status-overlay {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  top: 14px;
+  left: 14px;
+  padding: 5px 12px;
+  border-radius: 30px;
   font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-.status-active { background: rgba(16, 185, 129, 0.85); color: #fff; }
-.status-upcoming { background: rgba(245, 158, 11, 0.85); color: #fff; }
-.status-soldout { background: rgba(239, 68, 68, 0.85); color: #fff; }
-.status-ended { background: rgba(107, 114, 128, 0.85); color: #fff; }
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.status-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.status-active .status-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: blink 1.5s infinite;
+}
+
+.status-upcoming {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.status-upcoming .status-dot {
+  background: #a5b4fc;
+  box-shadow: 0 0 8px #a5b4fc;
+}
+
+.status-soldout {
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border-color: rgba(107, 114, 128, 0.2);
+}
+.status-soldout .status-dot {
+  background: #9ca3af;
+}
+
+.status-ended {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f43f5e;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.status-ended .status-dot {
+  background: #f43f5e;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
 
 .card-details {
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   flex: 1;
 }
 
 .item-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -478,8 +637,8 @@ onUnmounted(() => {
 .item-desc {
   font-size: 12px;
   color: var(--text-muted);
-  line-height: 1.4;
-  height: 34px;
+  line-height: 1.5;
+  height: 36px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -487,29 +646,40 @@ onUnmounted(() => {
   -webkit-box-orient: vertical;
 }
 
+/* 价格区域 */
 .price-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 4px;
+}
+
+.seckill-price-symbol {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10b981;
 }
 
 .seckill-price {
-  font-size: 20px;
-  font-weight: 700;
-  color: #ef4444;
+  font-size: 24px;
+  font-weight: 800;
+  color: #10b981;
   font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
 .original-price {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
   text-decoration: line-through;
+  margin-left: 8px;
 }
 
+/* 库存指示条 */
 .stock-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .stock-label {
@@ -519,85 +689,171 @@ onUnmounted(() => {
   color: var(--text-muted);
 }
 
+.stock-percentage-text {
+  font-weight: 600;
+  color: rgba(16, 185, 129, 0.8);
+}
+
+.stock-percentage-text.text-danger {
+  color: #ef4444;
+}
+
+.custom-progress-track {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.custom-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pulse-progress {
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 100%);
+  animation: progressPulse 1.5s infinite alternate;
+}
+
+.empty-progress {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@keyframes progressPulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.3); }
+}
+
+/* 计时器盒 */
 .timer-box {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 6px 12px;
-  border-radius: 8px;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  padding: 8px 14px;
+  border-radius: 10px;
   font-size: 12px;
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
+  color: #a7f3d0;
+  transition: all 0.3s;
+}
+
+.timer-box.upcoming-timer {
+  background: rgba(99, 102, 241, 0.04);
+  border-color: rgba(99, 102, 241, 0.15);
+  color: #c7d2fe;
+}
+
+.timer-icon {
+  font-size: 14px;
 }
 
 .timer-text {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 .action-row {
   margin-top: auto;
 }
 
-.seckill-btn {
+/* 结缘抢购按钮 */
+.aurora-btn {
   width: 100%;
-  height: 38px;
+  height: 42px;
+  border-radius: 12px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border: none !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* 滑块验证器样式 */
+.aurora-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #12c289 0%, #06a675 100%) !important;
+}
+
+.aurora-btn:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* 安全滑块校验对话框 */
+.verify-aurora-dialog :deep(.el-dialog) {
+  background: #0d1117 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+}
+
 .slider-verify-box {
   padding: 10px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .verify-tip {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
 .slider-track {
   position: relative;
-  width: 300px;
-  height: 50px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-color);
-  border-radius: 25px;
+  width: 320px;
+  height: 54px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 27px;
   overflow: hidden;
   user-select: none;
 }
 
 .slider-bg {
   height: 100%;
-  background-color: rgba(16, 185, 129, 0.2);
-  border-radius: 25px 0 0 25px;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.25) 100%);
+  border-radius: 27px 0 0 27px;
 }
 
 .slider-handle {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 50px;
-  height: 100%;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  top: 2px;
+  left: 2px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #fff;
   cursor: grab;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
-  transition: transform 0.1s;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+  transition: transform 0.1s, box-shadow 0.3s;
 }
 
 .slider-handle:active {
   cursor: grabbing;
   transform: scale(0.95);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+}
+
+.handle-icon {
+  font-size: 16px;
+  font-weight: bold;
 }
 
 .slider-text {
@@ -612,5 +868,55 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--text-muted);
   pointer-events: none;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+/* 企划发布对话框 */
+.publish-aurora-dialog :deep(.el-dialog) {
+  background: #0d1117 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 20px !important;
+}
+
+.publish-aurora-dialog :deep(.el-form-item__label) {
+  color: #a5b4fc !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.publish-aurora-dialog :deep(.el-input__wrapper), 
+.publish-aurora-dialog :deep(.el-input-number) {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 8px !important;
+}
+
+.publish-aurora-dialog :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(99, 102, 241, 0.6) !important;
+}
+
+.cancel-aurora-btn {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-muted) !important;
+  border-radius: 8px;
+}
+
+.cancel-aurora-btn:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #fff !important;
+}
+
+.confirm-aurora-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border: none !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.confirm-aurora-btn:hover {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6) !important;
+  transform: translateY(-1px);
 }
 </style>

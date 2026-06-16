@@ -199,3 +199,18 @@ CREATE TABLE IF NOT EXISTS `review` (
     INDEX idx_goods_id (`goods_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价表';
 
+-- 11. 聊天消息历史表
+CREATE TABLE IF NOT EXISTS `chat_message` (
+    `id` BIGINT AUTO_INCREMENT COMMENT '消息ID',
+    `sender_id` BIGINT NOT NULL COMMENT '发送者ID',
+    `receiver_id` BIGINT NOT NULL COMMENT '接收者ID',
+    `goods_id` BIGINT DEFAULT NULL COMMENT '关联商品ID',
+    `content` VARCHAR(2000) NOT NULL COMMENT '消息内容',
+    `is_read` TINYINT DEFAULT 0 COMMENT '是否已读: 0-未读, 1-已读',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    PRIMARY KEY (`id`),
+    INDEX idx_sender_receiver (`sender_id`, `receiver_id`),
+    INDEX idx_receiver_read (`receiver_id`, `is_read`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天消息历史表';
+
+

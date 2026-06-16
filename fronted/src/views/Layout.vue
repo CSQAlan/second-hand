@@ -20,7 +20,7 @@
         
         <el-menu-item index="/seckill">
           <el-icon><Lightning /></el-icon>
-          <template #title>限时秒杀</template>
+          <template #title>限定闪购</template>
         </el-menu-item>
         
         <el-menu-item index="/auction">
@@ -53,6 +53,17 @@
         </div>
 
         <div class="header-right">
+          <!-- 消息信箱入口 -->
+          <el-button 
+            v-if="userStore.isLoggedIn" 
+            type="text" 
+            icon="ChatDotRound" 
+            class="mailbox-btn"
+            @click="openMailbox"
+          >
+            私信信箱
+          </el-button>
+
           <!-- 未登录状态 -->
           <div v-if="!userStore.isLoggedIn" class="user-action">
             <el-button type="primary" size="small" @click="goToLogin">去登录</el-button>
@@ -82,6 +93,9 @@
         </router-view>
       </el-main>
     </el-container>
+    
+    <!-- 全局聊天弹框 -->
+    <ChatDialog />
   </el-container>
 </template>
 
@@ -89,11 +103,14 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
+import { useChatStore } from '../store/chat'
 import { ElMessage } from 'element-plus'
+import ChatDialog from '../components/ChatDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const chatStore = useChatStore()
 
 const isCollapse = ref(false)
 
@@ -103,6 +120,10 @@ const activeMenu = computed(() => {
 
 const goToLogin = () => {
   router.push('/login')
+}
+
+const openMailbox = () => {
+  chatStore.openChat(null, '')
 }
 
 const handleCommand = (command) => {
@@ -170,6 +191,21 @@ const handleCommand = (command) => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.mailbox-btn {
+  color: #a5b4fc !important;
+  font-weight: 600;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mailbox-btn:hover {
+  color: #fff !important;
+  text-shadow: 0 0 8px rgba(165, 180, 252, 0.4);
 }
 
 .user-profile {

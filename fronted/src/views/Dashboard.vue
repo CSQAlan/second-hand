@@ -91,11 +91,72 @@
         </div>
       </div>
     </div>
+
+    <!-- 平台交易操作日志监控 -->
+    <div class="log-console-card glass-card">
+      <div class="chart-header-custom">
+        <div class="header-left-side">
+          <h3 class="chart-title text-gradient">平台交易操作日志监控 (Platform Transaction Log)</h3>
+          <span class="chart-subtitle">实时监控全平台二手交易、星闪秒杀和臻品拍卖的订单流水</span>
+        </div>
+        <div class="log-controls">
+          <el-input 
+            v-model="logKeyword" 
+            placeholder="搜索商品/买家/卖家/订单号..." 
+            size="small" 
+            clearable 
+            style="width: 240px; margin-right: 16px;" 
+            prefix-icon="Search"
+          />
+          <el-checkbox v-model="autoRefresh" label="自动轮询 (5s)" size="small" style="margin-right: 16px;" />
+          <el-button type="primary" size="small" icon="Refresh" @click="fetchOperations" :loading="loadingOperations" class="log-refresh-btn">刷新日志</el-button>
+        </div>
+      </div>
+      <div class="operation-table-wrapper" ref="terminalRef">
+        <div v-if="filteredOperations.length === 0" class="log-empty-tip">
+          没有匹配的交易操作记录
+        </div>
+        <table v-else class="operation-table">
+          <thead>
+            <tr>
+              <th>订单编号</th>
+              <th>操作时间</th>
+              <th>交易商品</th>
+              <th>金额</th>
+              <th>买方</th>
+              <th>卖方</th>
+              <th>交易类型</th>
+              <th>状态</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="op in filteredOperations" :key="op.orderNo" class="op-row">
+              <td class="order-no-cell">{{ op.orderNo }}</td>
+              <td class="time-cell">{{ formatDateTime(op.createTime) }}</td>
+              <td class="goods-cell">{{ op.goodsName }}</td>
+              <td class="price-cell">￥{{ op.price }}</td>
+              <td class="user-cell">{{ op.buyerName }}</td>
+              <td class="user-cell">{{ op.sellerName }}</td>
+              <td class="type-cell">
+                <span :class="['type-badge', getTypeClass(op.type)]">
+                  {{ getTypeName(op.type) }}
+                </span>
+              </td>
+              <td class="status-cell">
+                <span :class="['status-badge', getStatusClass(op.status)]">
+                  {{ getStatusName(op.status) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
@@ -119,6 +180,103 @@ const barChartRef = ref(null)
 let lineChart = null
 let pieChart = null
 let barChart = null
+
+// 交易操作日志监控相关
+const logKeyword = ref('')
+const operationsList = ref([])
+const autoRefresh = ref(false)
+const loadingOperations = ref(false)
+const terminalRef = ref(null)
+let logTimer = null
+
+const fetchOperations = async () => {
+  loadingOperations.value = true
+  try {
+    const headers = { Authorization: `Bearer ${userStore.token}` }
+    const response = await axios.get('http://localhost:8080/api/admin/operations', { headers })
+    if (response.data.code === 200) {
+      operationsList.value = response.data.data || []
+    } else {
+      ElMessage.error(response.data.message || '获取操作日志失败')
+    }
+  } catch (error) {
+    console.error('获取操作日志异常:', error)
+  } finally {
+    loadingOperations.value = false
+  }
+}
+
+const filteredOperations = computed(() => {
+  if (!logKeyword.value) return operationsList.value
+  const keyword = logKeyword.value.toLowerCase()
+  return operationsList.value.filter(op => 
+    String(op.orderNo).toLowerCase().includes(keyword) ||
+    String(op.goodsName).toLowerCase().includes(keyword) ||
+    String(op.buyerName).toLowerCase().includes(keyword) ||
+    String(op.sellerName).toLowerCase().includes(keyword) ||
+    getTypeName(op.type).toLowerCase().includes(keyword) ||
+    getStatusName(op.status).toLowerCase().includes(keyword)
+  )
+})
+
+const getTypeName = (type) => {
+  switch (type) {
+    case 0: return '普通交易'
+    case 1: return '星闪秒杀'
+    case 2: return '臻品拍卖'
+    default: return '未知'
+  }
+}
+
+const getTypeClass = (type) => {
+  switch (type) {
+    case 0: return 'type-normal'
+    case 1: return 'type-seckill'
+    case 2: return 'type-auction'
+    default: return ''
+  }
+}
+
+const getStatusName = (status) => {
+  switch (status) {
+    case 0: return '待付款'
+    case 1: return '已付款/待发货'
+    case 2: return '已发货'
+    case 3: return '已收货'
+    case 4: return '交易成功'
+    case 5: return '已取消'
+    default: return '未知'
+  }
+}
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case 0: return 'status-warning'
+    case 1: return 'status-info'
+    case 2: return 'status-primary'
+    case 3:
+    case 4: return 'status-success'
+    case 5: return 'status-cancel'
+    default: return ''
+  }
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+watch(autoRefresh, (newVal) => {
+  if (newVal) {
+    logTimer = setInterval(fetchOperations, 5000)
+  } else {
+    if (logTimer) {
+      clearInterval(logTimer)
+      logTimer = null
+    }
+  }
+})
 
 const fetchStats = async () => {
   loading.value = true
@@ -304,11 +462,15 @@ const handleResize = () => {
 
 onMounted(() => {
   fetchStats()
+  fetchOperations()
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  if (logTimer) {
+    clearInterval(logTimer)
+  }
 })
 </script>
 
@@ -478,5 +640,182 @@ onUnmounted(() => {
   flex: 1;
   width: 100%;
   height: 100%;
+}
+
+/* 日志控制台样式 */
+.log-console-card {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(20, 24, 33, 0.8) 0%, rgba(10, 13, 19, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chart-header-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-left-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-refresh-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  border: none !important;
+}
+
+.operation-table-wrapper {
+  background-color: rgba(3, 7, 18, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 8px;
+  height: 400px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.operation-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.operation-table th {
+  padding: 14px 16px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.operation-table td {
+  padding: 12px 16px;
+  color: var(--text-main);
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.op-row {
+  transition: background-color 0.2s ease;
+}
+
+.op-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.order-no-cell {
+  font-family: monospace;
+  color: var(--text-dim);
+}
+
+.time-cell {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.goods-cell {
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.price-cell {
+  color: #fbbf24;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.user-cell {
+  color: #cbd5e1;
+}
+
+.log-empty-tip {
+  color: var(--text-dim);
+  text-align: center;
+  padding-top: 150px;
+  font-size: 14px;
+}
+
+/* 标签徽章样式 */
+.type-badge, .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* 交易类型 */
+.type-normal {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.type-seckill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  text-shadow: 0 0 6px rgba(52, 211, 153, 0.2);
+}
+
+.type-auction {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+/* 交易状态 */
+.status-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.status-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.status-primary {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.status-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.status-cancel {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(156, 163, 175, 0.25);
 }
 </style>

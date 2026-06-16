@@ -3,6 +3,7 @@ package com.test.secondhand.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,6 +18,7 @@ public class Goods {
     private String imageUrl;
     private String images; // 多图JSON数组
     private String category;
+    @TableField("`condition`")
     private String condition; // 成色: 全新/九成新/八成新等
     private String tradingMethod; // 交易方式: 面交/邮寄
     private String location;

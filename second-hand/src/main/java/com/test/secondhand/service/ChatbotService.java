@@ -78,7 +78,8 @@ public class ChatbotService {
         if (matchedGoods != null && !matchedGoods.isEmpty()) {
             goodsContextBuilder.append("【实时系统在售商品推荐】:\n");
             for (com.test.secondhand.entity.Goods g : matchedGoods) {
-                goodsContextBuilder.append("- ").append(g.getName())
+                goodsContextBuilder.append("- <a href=\"/goods?detailId=").append(g.getId())
+                        .append("\" class=\"chat-goods-link\">").append(g.getName()).append("</a>")
                         .append("，价格: ").append(g.getPrice()).append("元")
                         .append("，成色: ").append(g.getCondition() != null ? g.getCondition() : "未知")
                         .append("，卖家介绍: ").append(g.getDescription())
@@ -110,9 +111,9 @@ public class ChatbotService {
                     "【系统背景规则】\n" + context + "\n\n";
             if (!goodsContext.isEmpty()) {
                 systemPrompt += goodsContext + "\n" +
-                        "【商品推荐准则】：如果检索出的商品与用户的购买兴趣高度匹配，请极力向用户宣传并推荐这些在售商品，鼓励其点击下单！\n\n";
+                        "【商品推荐准则】：如果在售商品推荐中有与用户兴趣匹配的商品，请向用户极力推荐。你在回答中提到该商品时，必须直接把上述商品列表中的 HTML 链接（例如 <a href=\"/goods?detailId=8\" class=\"chat-goods-link\">商品名称</a>）直接复制到你的回答里，方便用户点击跳转！不要使用 Markdown 格式的链接！\n\n";
             }
-            systemPrompt += "请注意：如果规则和商品中没有相关信息，请根据普通二手交易常识解答。字数保持在 200 字以内。";
+            systemPrompt += "请注意：如果规则和商品中没有相关信息，请根据普通二手交易常识解答。字数保持在 250 字以内，生成的超链接标签必须完整且与提供的一致。";
 
             Map<String, String> systemMessage = new HashMap<>();
             systemMessage.put("role", "system");
