@@ -157,7 +157,7 @@ const publishRules = {
 const fetchAuctionList = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8080/api/auction/list')
+    const response = await axios.get('/api/auction/list')
     if (response.data.code === 200) {
       auctionList.value = response.data.data
       
@@ -199,7 +199,7 @@ const handleBid = async (item) => {
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
     const response = await axios.post(
-      'http://localhost:8080/api/auction/bid',
+      '/api/auction/bid',
       { auctionGoodsId: item.id, bidPrice: bidPrice },
       { headers }
     )
@@ -237,7 +237,7 @@ const submitPublish = () => {
         endTime: publishForm.timeRange[1]
       }
       
-      const response = await axios.post('http://localhost:8080/api/auction/publish', payload, { headers })
+      const response = await axios.post('/api/auction/publish', payload, { headers })
       if (response.data.code === 200) {
         ElMessage.success('商品拍卖活动发布成功！')
         publishDialog.value = false

@@ -190,7 +190,7 @@ const publishRules = {
 const fetchSeckillList = async () => {
   loading.value = true
   try {
-    const response = await axios.get('http://localhost:8080/api/seckill/list')
+    const response = await axios.get('/api/seckill/list')
     if (response.data.code === 200) {
       seckillList.value = response.data.data
     }
@@ -329,7 +329,7 @@ const handleOrder = async () => {
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
     const response = await axios.post(
-      'http://localhost:8080/api/seckill/order', 
+      '/api/seckill/order', 
       { goodsId: item.goodsId },
       { headers }
     )
@@ -366,7 +366,7 @@ const submitPublish = () => {
         endTime: publishForm.timeRange[1]
       }
       
-      const response = await axios.post('http://localhost:8080/api/seckill/publish', payload, { headers })
+      const response = await axios.post('/api/seckill/publish', payload, { headers })
       if (response.data.code === 200) {
         ElMessage.success('秒杀活动发起成功！已开启库存预热！')
         publishDialog.value = false

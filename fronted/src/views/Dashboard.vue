@@ -193,7 +193,7 @@ const fetchOperations = async () => {
   loadingOperations.value = true
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get('http://localhost:8080/api/admin/operations', { headers })
+    const response = await axios.get('/api/admin/operations', { headers })
     if (response.data.code === 200) {
       operationsList.value = response.data.data || []
     } else {
@@ -282,7 +282,7 @@ const fetchStats = async () => {
   loading.value = true
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get('http://localhost:8080/api/admin/dashboard/stats', { headers })
+    const response = await axios.get('/api/admin/dashboard/stats', { headers })
     if (response.data.code === 200) {
       stats.value = response.data.data
       await nextTick()

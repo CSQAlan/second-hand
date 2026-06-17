@@ -138,6 +138,59 @@
                       <span class="time">发布时间: {{ formatDateTime(item.createTime) }}</span>
                     </div>
                   </div>
+                  <div class="order-actions">
+                    <el-button
+                      v-if="item.status === 0"
+                      type="warning"
+                      size="small"
+                      @click="handleEditPrice(item)"
+                    >
+                      修改价格
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 我的收藏 -->
+            <el-tab-pane label="我的收藏" name="favorites">
+              <div v-loading="loading" class="order-list">
+                <el-empty v-if="myFavorites.length === 0" description="您还没有收藏任何商品！" />
+                
+                <div v-for="item in myFavorites" :key="item.id" class="order-item glass-card-nested">
+                  <div class="order-goods-img">
+                    <img :src="item.imageUrl || defaultImage" alt="商品图" />
+                  </div>
+                  <div class="order-goods-info">
+                    <div class="order-header-row">
+                      <span class="order-no">商品ID: #{{ item.id }}</span>
+                      <el-tag :type="item.status === 0 ? 'success' : 'info'">
+                        {{ item.status === 0 ? '在售中' : '已售出/下架' }}
+                      </el-tag>
+                    </div>
+                    <h4 class="goods-name">{{ item.name }}</h4>
+                    <p class="goods-desc">{{ item.description }}</p>
+                    <div class="order-details">
+                      <span class="price">价格: ￥{{ item.price }}</span>
+                    </div>
+                  </div>
+                  <div class="order-actions">
+                    <el-button
+                      type="danger"
+                      size="small"
+                      @click="removeFavorite(item.id)"
+                    >
+                      取消收藏
+                    </el-button>
+                    <el-button
+                      v-if="item.status === 0"
+                      type="primary"
+                      size="small"
+                      @click="goToDetail(item.id)"
+                    >
+                      查看详情
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </el-tab-pane>
@@ -168,8 +221,10 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
+const router = useRouter()
 const activeTab = ref('bought')
 const loading = ref(false)
 const shipping = ref(false)
@@ -177,6 +232,7 @@ const shipping = ref(false)
 const boughtOrders = ref([])
 const soldOrders = ref([])
 const myListings = ref([])
+const myFavorites = ref([])
 
 const defaultImage = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60'
 
@@ -219,6 +275,8 @@ const handleTabChange = (name) => {
     fetchSold()
   } else if (name === 'listings') {
     fetchListings()
+  } else if (name === 'favorites') {
+    fetchFavorites()
   }
 }
 
@@ -227,7 +285,7 @@ const fetchBought = async () => {
   loading.value = true
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get('http://localhost:8080/api/orders/buyer', { headers })
+    const response = await axios.get('/api/orders/buyer', { headers })
     if (response.data.code === 200) {
       boughtOrders.value = response.data.data
     }
@@ -243,7 +301,7 @@ const fetchSold = async () => {
   loading.value = true
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get('http://localhost:8080/api/orders/seller', { headers })
+    const response = await axios.get('/api/orders/seller', { headers })
     if (response.data.code === 200) {
       soldOrders.value = response.data.data
     }
@@ -259,7 +317,7 @@ const fetchListings = async () => {
   loading.value = true
   try {
     // 后端接口暂无直接的用户发布列表筛选，采用全表获取后前端过滤（ sellerId 等于当前用户）
-    const response = await axios.get('http://localhost:8080/api/goods/list')
+    const response = await axios.get('/api/goods/list')
     if (response.data.code === 200) {
       myListings.value = response.data.data.filter(
         (item) => String(item.sellerId) === String(userStore.userId)
@@ -272,6 +330,47 @@ const fetchListings = async () => {
   }
 }
 
+// 我的收藏
+const fetchFavorites = async () => {
+  loading.value = true
+  try {
+    const headers = { Authorization: `Bearer ${userStore.token}` }
+    const response = await axios.get('/api/favorite/list', { headers })
+    if (response.data.code === 200) {
+      myFavorites.value = response.data.data
+    }
+  } catch (err) {
+    ElMessage.error('获取收藏列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const removeFavorite = async (goodsId) => {
+  ElMessageBox.confirm('确定要取消收藏该商品吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const headers = { Authorization: `Bearer ${userStore.token}` }
+      const response = await axios.delete(`/api/favorite/${goodsId}`, { headers })
+      if (response.data.code === 200) {
+        ElMessage.success('已取消收藏')
+        fetchFavorites()
+      } else {
+        ElMessage.error(response.data.message || '取消收藏失败')
+      }
+    } catch (err) {
+      ElMessage.error(err.response?.data?.message || '取消收藏失败')
+    }
+  }).catch(() => {})
+}
+
+const goToDetail = (goodsId) => {
+  router.push(`/goods?detailId=${goodsId}`)
+}
+
 // 确认收货
 const handleReceive = (orderNo) => {
   ElMessageBox.confirm('您收到货物了吗？请务必在确认收到且商品完好后点击确认收货！', '收货确认', {
@@ -281,7 +380,7 @@ const handleReceive = (orderNo) => {
   }).then(async () => {
     try {
       const headers = { Authorization: `Bearer ${userStore.token}` }
-      const response = await axios.post(`http://localhost:8080/api/orders/receive/${orderNo}`, {}, { headers })
+      const response = await axios.post(`/api/orders/receive/${orderNo}`, {}, { headers })
       if (response.data.code === 200) {
         ElMessage.success('确认收货成功！交易完成。')
         fetchBought()
@@ -309,7 +408,7 @@ const submitShip = () => {
     try {
       const headers = { Authorization: `Bearer ${userStore.token}` }
       const response = await axios.post(
-        `http://localhost:8080/api/orders/ship/${currentOrder.value.orderNo}`,
+        `/api/orders/ship/${currentOrder.value.orderNo}`,
         { deliveryNo: shipForm.value.deliveryNo },
         { headers }
       )
@@ -353,6 +452,47 @@ const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+const handleEditPrice = (item) => {
+  ElMessageBox.prompt('请输入新的商品价格 (元)：', '修改价格', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPattern: /^\d+(\.\d{1,2})?$/,
+    inputErrorMessage: '请输入正确的价格格式（最多两位小数）',
+    inputValue: item.price.toString()
+  }).then(async ({ value }) => {
+    const newPrice = parseFloat(value)
+    if (newPrice <= 0) {
+      ElMessage.warning('价格必须大于0')
+      return
+    }
+    try {
+      const headers = { Authorization: `Bearer ${userStore.token}` }
+      const response = await axios.put('/api/goods/update', {
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: newPrice,
+        imageUrl: item.imageUrl,
+        images: item.images,
+        category: item.category,
+        condition: item.condition,
+        tradingMethod: item.tradingMethod,
+        location: item.location,
+        status: item.status
+      }, { headers })
+      
+      if (response.data.code === 200) {
+        ElMessage.success('商品价格修改成功！')
+        fetchListings()
+      } else {
+        ElMessage.error(response.data.message || '修改价格失败')
+      }
+    } catch (err) {
+      ElMessage.error(err.response?.data?.message || '网络或系统异常，修改失败')
+    }
+  }).catch(() => {})
 }
 
 onMounted(() => {

@@ -24,6 +24,7 @@ public class GoodsVO {
     private String location;
     private Integer viewCount;
     private Integer status;
+    private Long sellerId;
     private LocalDateTime createTime;
 
     /**
@@ -46,6 +47,7 @@ public class GoodsVO {
         vo.setLocation(goods.getLocation());
         vo.setViewCount(goods.getViewCount());
         vo.setStatus(goods.getStatus());
+        vo.setSellerId(goods.getSellerId());
         vo.setCreateTime(goods.getCreateTime());
         return vo;
     }

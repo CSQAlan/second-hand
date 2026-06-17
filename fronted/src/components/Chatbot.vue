@@ -114,7 +114,7 @@ const handleSend = async () => {
   scrollToBottom()
 
   try {
-    const response = await axios.post('http://localhost:8080/api/chatbot/ask', { question: text })
+    const response = await axios.post('/api/chatbot/ask', { question: text })
     if (response.data.code === 200) {
       messages.push({ role: 'bot', content: response.data.data })
     } else {

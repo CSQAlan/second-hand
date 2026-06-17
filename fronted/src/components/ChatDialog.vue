@@ -15,19 +15,19 @@
           <div v-if="contacts.length === 0" class="empty-contacts">暂无联系人</div>
           <div
             v-for="c in contacts"
-            :key="c.id"
+            :key="c.userId"
             class="contact-item"
-            :class="{ active: chatStore.activeContactId === c.id }"
+            :class="{ active: chatStore.activeContactId === c.userId }"
             @click="selectContact(c)"
           >
             <el-avatar :size="40" :src="c.avatar || defaultAvatar" />
             <div class="contact-info">
               <div class="contact-name-row">
                 <span class="contact-name">{{ c.nickname || c.username }}</span>
-                <span class="msg-time" v-if="c.latestTime">{{ formatTime(c.latestTime) }}</span>
+                <span class="msg-time" v-if="c.lastMessageTime">{{ formatTime(c.lastMessageTime) }}</span>
               </div>
               <div class="contact-msg-row">
-                <span class="latest-msg">{{ c.latestMessage }}</span>
+                <span class="latest-msg">{{ c.lastMessage }}</span>
                 <el-badge v-if="c.unreadCount > 0" :value="c.unreadCount" class="msg-badge" />
               </div>
             </div>
@@ -124,7 +124,7 @@ const fetchContacts = async () => {
   if (!userStore.isLoggedIn) return
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get('http://localhost:8080/api/chat/contacts', { headers })
+    const response = await axios.get('/api/chat/contacts', { headers })
     if (response.data.code === 200) {
       contacts.value = response.data.data
     }
@@ -138,7 +138,7 @@ const fetchHistory = async (contactId) => {
   if (!userStore.isLoggedIn || !contactId) return
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.get(`http://localhost:8080/api/chat/history?receiverId=${contactId}`, { headers })
+    const response = await axios.get(`/api/chat/history?receiverId=${contactId}`, { headers })
     if (response.data.code === 200) {
       const newMessages = response.data.data
       
@@ -160,7 +160,7 @@ const markAsRead = async (contactId) => {
   if (!userStore.isLoggedIn || !contactId) return
   try {
     const headers = { Authorization: `Bearer ${userStore.token}` }
-    await axios.post(`http://localhost:8080/api/chat/read?senderId=${contactId}`, {}, { headers })
+    await axios.post(`/api/chat/read?senderId=${contactId}`, {}, { headers })
     fetchContacts() // 刷新联系人列表以重置未读红点
   } catch (error) {
     console.error('标记已读失败:', error)
@@ -169,11 +169,11 @@ const markAsRead = async (contactId) => {
 
 // 切换对话联系人
 const selectContact = (contact) => {
-  chatStore.activeContactId = contact.id
+  chatStore.activeContactId = contact.userId
   chatStore.activeContactName = contact.nickname || contact.username
   messages.value = []
-  fetchHistory(contact.id)
-  markAsRead(contact.id)
+  fetchHistory(contact.userId)
+  markAsRead(contact.userId)
 }
 
 // 发送聊天消息
@@ -190,7 +190,7 @@ const sendMsg = async () => {
       goodsId: chatStore.activeGoodsId,
       content: content
     }
-    const response = await axios.post('http://localhost:8080/api/chat/send', payload, { headers })
+    const response = await axios.post('/api/chat/send', payload, { headers })
     if (response.data.code === 200) {
       inputMessage.value = ''
       // 插入到当前消息流中，提升响应速度

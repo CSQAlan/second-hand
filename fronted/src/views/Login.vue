@@ -58,7 +58,7 @@ const handleLogin = () => {
     
     loading.value = true
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', form)
+      const response = await axios.post('/api/auth/login', form)
       if (response.data.code === 200) {
         userStore.login(response.data.data)
         ElMessage.success('登录成功')

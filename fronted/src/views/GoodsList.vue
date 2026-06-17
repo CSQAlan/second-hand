@@ -18,19 +18,37 @@
 
     <!-- 商品列表 -->
     <div v-loading="loading" class="goods-grid">
-      <el-empty v-if="filteredGoods.length === 0" description="暂无在售的二手商品，快去发布一个吧！" />
-      
-      <div v-for="item in filteredGoods" :key="item.id" class="goods-card glass-card clickable-card" @click="showDetail(item)">
+      <el-empty
+        v-if="filteredGoods.length === 0"
+        description="暂无在售的二手商品，快去发布一个吧！"
+      />
+
+      <div
+        v-for="item in filteredGoods"
+        :key="item.id"
+        class="goods-card glass-card clickable-card"
+        @click="showDetail(item)"
+      >
         <div class="goods-img-wrapper">
-          <img :src="item.imageUrl || defaultImage" alt="商品主图" class="goods-img" />
+          <img
+            :src="item.imageUrl || defaultImage"
+            alt="商品主图"
+            class="goods-img"
+          />
           <div class="price-tag">￥{{ item.price }}</div>
         </div>
         <div class="goods-info">
           <h3 class="goods-name">{{ item.name }}</h3>
           <p class="goods-desc">{{ item.description }}</p>
           <div class="goods-footer">
-            <span class="publish-time">发布时间: {{ formatDate(item.createTime) }}</span>
-            <el-button type="success" size="small" @click.stop="handleBuy(item)">
+            <span class="publish-time"
+              >发布时间: {{ formatDate(item.createTime) }}</span
+            >
+            <el-button
+              type="success"
+              size="small"
+              @click.stop="handleBuy(item)"
+            >
               立即购买
             </el-button>
           </div>
@@ -40,17 +58,35 @@
 
     <!-- 发布商品对话框 -->
     <el-dialog v-model="publishDialog" title="发布您的二手闲置" width="500px">
-      <el-form :model="publishForm" :rules="publishRules" ref="formRef" label-position="top">
+      <el-form
+        :model="publishForm"
+        :rules="publishRules"
+        ref="formRef"
+        label-position="top"
+      >
         <el-form-item label="商品名称" prop="name">
-          <el-input v-model="publishForm.name" placeholder="请输入商品名称，如：iPhone 13 95新" />
+          <el-input
+            v-model="publishForm.name"
+            placeholder="请输入商品名称，如：iPhone 13 95新"
+          />
         </el-form-item>
 
         <el-form-item label="转让价格 (元)" prop="price">
-          <el-input-number v-model="publishForm.price" :precision="2" :step="10" :min="0.01" style="width: 100%" />
+          <el-input-number
+            v-model="publishForm.price"
+            :precision="2"
+            :step="10"
+            :min="0.01"
+            style="width: 100%"
+          />
         </el-form-item>
 
         <el-form-item label="商品分类" prop="category">
-          <el-select v-model="publishForm.category" placeholder="请选择商品所属分类" style="width: 100%">
+          <el-select
+            v-model="publishForm.category"
+            placeholder="请选择商品所属分类"
+            style="width: 100%"
+          >
             <el-option label="手机数码" value="手机数码" />
             <el-option label="图书教材" value="图书教材" />
             <el-option label="服饰鞋帽" value="服饰鞋帽" />
@@ -60,7 +96,11 @@
         </el-form-item>
 
         <el-form-item label="新旧成色" prop="condition">
-          <el-select v-model="publishForm.condition" placeholder="请选择商品成色" style="width: 100%">
+          <el-select
+            v-model="publishForm.condition"
+            placeholder="请选择商品成色"
+            style="width: 100%"
+          >
             <el-option label="全新" value="全新" />
             <el-option label="九五新" value="九五新" />
             <el-option label="九成新" value="九成新" />
@@ -70,7 +110,11 @@
         </el-form-item>
 
         <el-form-item label="交易形式" prop="tradingMethod">
-          <el-select v-model="publishForm.tradingMethod" placeholder="请选择交易形式" style="width: 100%">
+          <el-select
+            v-model="publishForm.tradingMethod"
+            placeholder="请选择交易形式"
+            style="width: 100%"
+          >
             <el-option label="邮寄" value="邮寄" />
             <el-option label="面交" value="面交" />
             <el-option label="面交/邮寄" value="面交/邮寄" />
@@ -78,35 +122,54 @@
         </el-form-item>
 
         <el-form-item label="交易所在地" prop="location">
-          <el-input v-model="publishForm.location" placeholder="请输入交易地点，如：北京大学、海淀区等" />
+          <el-input
+            v-model="publishForm.location"
+            placeholder="请输入交易地点，如：北京大学、海淀区等"
+          />
         </el-form-item>
 
         <el-form-item label="商品图片" prop="imageUrl">
           <el-upload
             class="image-uploader"
-            action="http://localhost:8080/api/upload"
+            action="/api/upload"
             :headers="uploadHeaders"
             :show-file-list="false"
             :on-success="handleUploadSuccess"
             :before-upload="beforeUpload"
           >
-            <img v-if="publishForm.imageUrl" :src="publishForm.imageUrl" class="uploaded-image" />
+            <img
+              v-if="publishForm.imageUrl"
+              :src="publishForm.imageUrl"
+              class="uploaded-image"
+            />
             <el-icon v-else class="image-uploader-icon"><Plus /></el-icon>
           </el-upload>
-          <div style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">
-            支持上传本地图片 (存储在本地磁盘并记录到数据库)，或在下方直接粘贴外链 URL
+          <div style="font-size: 11px; color: var(--text-dim); margin-top: 6px">
+            支持上传本地图片
+            (存储在本地磁盘并记录到数据库)，或在下方直接粘贴外链 URL
           </div>
-          <el-input v-model="publishForm.imageUrl" placeholder="或者直接输入/修改图片 URL 外链" style="margin-top: 8px;" />
+          <el-input
+            v-model="publishForm.imageUrl"
+            placeholder="或者直接输入/修改图片 URL 外链"
+            style="margin-top: 8px"
+          />
         </el-form-item>
 
         <el-form-item label="商品描述" prop="description">
-          <el-input v-model="publishForm.description" type="textarea" :rows="4" placeholder="请详细描述商品的成色、配件等信息..." />
+          <el-input
+            v-model="publishForm.description"
+            type="textarea"
+            :rows="4"
+            placeholder="请详细描述商品的成色、配件等信息..."
+          />
         </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="publishDialog = false">取 消</el-button>
-          <el-button type="primary" @click="submitPublish" :loading="publishing">确 认 发 布</el-button>
+          <el-button type="primary" @click="submitPublish" :loading="publishing"
+            >确 认 发 布</el-button
+          >
         </div>
       </template>
     </el-dialog>
@@ -119,10 +182,20 @@
       class="goods-detail-drawer"
       destroy-on-close
     >
-      <div v-if="selectedGoods" class="detail-content" v-loading="loadingDetail">
+      <div
+        v-if="selectedGoods"
+        class="detail-content"
+        v-loading="loadingDetail"
+      >
         <div class="detail-img-box">
-          <img :src="selectedGoods.imageUrl || defaultImage" alt="商品图片" class="detail-large-img" />
-          <span class="detail-category-badge">{{ selectedGoods.category || '未分类' }}</span>
+          <img
+            :src="selectedGoods.imageUrl || defaultImage"
+            alt="商品图片"
+            class="detail-large-img"
+          />
+          <span class="detail-category-badge">{{
+            selectedGoods.category || "未分类"
+          }}</span>
         </div>
 
         <div class="detail-body">
@@ -132,8 +205,14 @@
           </div>
 
           <div class="detail-stats-bar">
-            <span class="stat-item"><el-icon><View /></el-icon> 浏览量: {{ selectedGoods.viewCount || 0 }}</span>
-            <span class="stat-item"><el-icon><Star /></el-icon> 收藏数: {{ detailData.favoriteCount || 0 }}</span>
+            <span class="stat-item"
+              ><el-icon><View /></el-icon> 浏览量:
+              {{ selectedGoods.viewCount || 0 }}</span
+            >
+            <span class="stat-item"
+              ><el-icon><Star /></el-icon> 收藏数:
+              {{ detailData.favoriteCount || 0 }}</span
+            >
           </div>
 
           <el-divider />
@@ -141,9 +220,24 @@
           <div class="detail-section">
             <h4 class="section-title">宝贝属性</h4>
             <div class="attributes-grid">
-              <div class="attr-item"><span class="attr-label">新旧成色:</span> <span class="attr-val">{{ selectedGoods.condition || '未知' }}</span></div>
-              <div class="attr-item"><span class="attr-label">交易形式:</span> <span class="attr-val">{{ selectedGoods.tradingMethod || '未知' }}</span></div>
-              <div class="attr-item"><span class="attr-label">所在地:</span> <span class="attr-val">{{ selectedGoods.location || '未知' }}</span></div>
+              <div class="attr-item">
+                <span class="attr-label">新旧成色:</span>
+                <span class="attr-val">{{
+                  selectedGoods.condition || "未知"
+                }}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">交易形式:</span>
+                <span class="attr-val">{{
+                  selectedGoods.tradingMethod || "未知"
+                }}</span>
+              </div>
+              <div class="attr-item">
+                <span class="attr-label">所在地:</span>
+                <span class="attr-val">{{
+                  selectedGoods.location || "未知"
+                }}</span>
+              </div>
             </div>
           </div>
 
@@ -160,10 +254,73 @@
           <div class="detail-section" v-if="detailData.seller">
             <h4 class="section-title">发布者信息</h4>
             <div class="seller-card-inner">
-              <el-avatar :size="40" :src="detailData.seller.avatar || defaultAvatar" />
+              <el-avatar
+                :size="40"
+                :src="detailData.seller.avatar || defaultAvatar"
+              />
               <div class="seller-info-content">
-                <span class="seller-nickname">{{ detailData.seller.nickname || detailData.seller.username }}</span>
-                <span class="seller-role">{{ detailData.seller.role === 'ROLE_ADMIN' ? '官方管理员' : '普通卖家' }}</span>
+                <span class="seller-nickname">{{
+                  detailData.seller.nickname || detailData.seller.username
+                }}</span>
+                <span class="seller-role">{{
+                  detailData.seller.role === "ROLE_ADMIN"
+                    ? "官方管理员"
+                    : "普通卖家"
+                }}</span>
+              </div>
+            </div>
+
+            <!-- 卖家评价统计 -->
+            <div class="review-stats-box" v-if="detailData.reviewStats">
+              <div class="stat-col">
+                <span class="stat-num">{{
+                  detailData.reviewStats.totalReviews || 0
+                }}</span>
+                <span class="stat-lbl">历史评价</span>
+              </div>
+              <div class="stat-col">
+                <span class="stat-num">{{
+                  detailData.reviewStats.goodReviews || 0
+                }}</span>
+                <span class="stat-lbl">好评数</span>
+              </div>
+              <div class="stat-col">
+                <span class="stat-num highlight">{{
+                  detailData.reviewStats.averageRating
+                    ? Number(detailData.reviewStats.averageRating).toFixed(1)
+                    : "5.0"
+                }}</span>
+                <span class="stat-lbl">综合评分</span>
+              </div>
+            </div>
+          </div>
+
+          <el-divider
+            v-if="detailData.relatedGoods && detailData.relatedGoods.length > 0"
+          />
+
+          <!-- 相关推荐 -->
+          <div
+            class="detail-section"
+            v-if="detailData.relatedGoods && detailData.relatedGoods.length > 0"
+          >
+            <h4 class="section-title">相关宝贝推荐</h4>
+            <div class="related-goods-list">
+              <div
+                class="related-card"
+                v-for="related in detailData.relatedGoods"
+                :key="related.id"
+                @click="showDetail(related)"
+              >
+                <img
+                  :src="related.imageUrl || defaultImage"
+                  alt="推荐商品"
+                  class="related-img"
+                />
+                <div class="related-info">
+                  <span class="related-name">{{ related.name }}</span>
+                  <span class="related-price">￥{{ related.price }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -171,17 +328,26 @@
 
         <!-- 底部操作 -->
         <div class="detail-drawer-footer">
-          <el-button 
-            :type="detailData.isFavorite ? 'warning' : 'info'" 
-            :icon="detailData.isFavorite ? 'StarFilled' : 'Star'" 
+          <el-button
+            :type="detailData.isFavorite ? 'warning' : 'info'"
+            :icon="detailData.isFavorite ? 'StarFilled' : 'Star'"
             circle
             @click="toggleFavorite"
             :loading="togglingFav"
           />
-          <el-button type="primary" class="chat-seller-btn" icon="ChatDotRound" @click="chatWithSeller">
+          <el-button
+            type="primary"
+            class="chat-seller-btn"
+            icon="ChatDotRound"
+            @click="chatWithSeller"
+          >
             联系卖家
           </el-button>
-          <el-button type="success" class="buy-now-btn" @click="handleBuy(selectedGoods)">
+          <el-button
+            type="success"
+            class="buy-now-btn"
+            @click="handleBuy(selectedGoods)"
+          >
             立即购买
           </el-button>
         </div>
@@ -191,288 +357,341 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useUserStore } from '../store/user'
-import { useChatStore } from '../store/chat'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useRouter, useRoute } from 'vue-router'
-import axios from 'axios'
+import { ref, reactive, computed, onMounted, watch } from "vue";
+import { useUserStore } from "../store/user";
+import { useChatStore } from "../store/chat";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useRouter, useRoute } from "vue-router";
+import axios from "axios";
 
-const userStore = useUserStore()
-const chatStore = useChatStore()
-const router = useRouter()
-const route = useRoute()
+const userStore = useUserStore();
+const chatStore = useChatStore();
+const router = useRouter();
+const route = useRoute();
 
-const loading = ref(false)
-const publishing = ref(false)
-const publishDialog = ref(false)
-const searchQuery = ref('')
-const goodsList = ref([])
+const loading = ref(false);
+const publishing = ref(false);
+const publishDialog = ref(false);
+const searchQuery = ref("");
+const goodsList = ref([]);
 
-const defaultImage = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60'
-const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+const defaultImage =
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&auto=format&fit=crop&q=60";
+const defaultAvatar =
+  "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png";
 
-const formRef = ref(null)
+const formRef = ref(null);
 const publishForm = reactive({
-  name: '',
-  price: 99.00,
-  category: '其它闲置',
-  condition: '九成新',
-  tradingMethod: '面交/邮寄',
-  location: '',
-  imageUrl: '',
-  description: ''
-})
+  name: "",
+  price: 99.0,
+  category: "其它闲置",
+  condition: "九成新",
+  tradingMethod: "面交/邮寄",
+  location: "",
+  imageUrl: "",
+  description: "",
+});
 
 const publishRules = {
-  name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-  price: [{ required: true, message: '请输入价格', trigger: 'blur' }],
-  description: [{ required: true, message: '请添加商品描述', trigger: 'blur' }]
-}
+  name: [{ required: true, message: "请输入商品名称", trigger: "blur" }],
+  price: [{ required: true, message: "请输入价格", trigger: "blur" }],
+  description: [{ required: true, message: "请添加商品描述", trigger: "blur" }],
+};
 
 const uploadHeaders = computed(() => {
   return {
-    Authorization: `Bearer ${userStore.token}`
-  }
-})
+    Authorization: `Bearer ${userStore.token}`,
+  };
+});
 
 const beforeUpload = (file) => {
-  const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/gif' || file.type === 'image/webp'
-  const isLt2M = file.size / 1024 / 1024 < 2
+  const isJPGorPNG =
+    file.type === "image/jpeg" ||
+    file.type === "image/png" ||
+    file.type === "image/gif" ||
+    file.type === "image/webp";
+  const isLt2M = file.size / 1024 / 1024 < 2;
 
   if (!isJPGorPNG) {
-    ElMessage.error('图片只能是 JPG/PNG/GIF/WEBP 格式!')
+    ElMessage.error("图片只能是 JPG/PNG/GIF/WEBP 格式!");
   }
   if (!isLt2M) {
-    ElMessage.error('图片大小不能超过 2MB!')
+    ElMessage.error("图片大小不能超过 2MB!");
   }
-  return isJPGorPNG && isLt2M
-}
+  return isJPGorPNG && isLt2M;
+};
 
 const handleUploadSuccess = (response) => {
   if (response.code === 200) {
-    publishForm.imageUrl = response.data
-    ElMessage.success('图片上传成功！')
+    publishForm.imageUrl = response.data;
+    ElMessage.success("图片上传成功！");
   } else {
-    ElMessage.error(response.message || '图片上传失败')
+    ElMessage.error(response.message || "图片上传失败");
   }
-}
+};
 
 const filteredGoods = computed(() => {
-  return goodsList.value
-})
+  return goodsList.value;
+});
 
 // 监听搜索框输入，通过防抖调用后端搜索接口实现真正的向量/全文检索
-let searchTimeout = null
+let searchTimeout = null;
 watch(searchQuery, (newVal) => {
-  if (searchTimeout) clearTimeout(searchTimeout)
+  if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(async () => {
-    loading.value = true
+    loading.value = true;
     try {
-      let url = 'http://localhost:8080/api/goods/list'
+      let url = "/api/goods/list";
       if (newVal.trim()) {
-        url = `http://localhost:8080/api/goods/search?keyword=${encodeURIComponent(newVal.trim())}`
+        url = `/api/goods/search?keyword=${encodeURIComponent(
+          newVal.trim()
+        )}`;
       }
-      const response = await axios.get(url)
+      const response = await axios.get(url);
       if (response.data.code === 200) {
-        goodsList.value = response.data.data
+        goodsList.value = response.data.data;
       }
     } catch (error) {
-      console.error('搜索商品失败:', error)
-      ElMessage.error('搜索请求失败，请检查网络')
+      console.error("搜索商品失败:", error);
+      ElMessage.error("搜索请求失败，请检查网络");
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }, 300) // 300ms 防抖频率
-})
+  }, 300); // 300ms 防抖频率
+});
 
 const fetchGoods = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await axios.get('http://localhost:8080/api/goods/list')
+    const response = await axios.get("/api/goods/list");
     if (response.data.code === 200) {
-      goodsList.value = response.data.data
+      goodsList.value = response.data.data;
     }
   } catch (error) {
-    logError(error)
+    logError(error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleBuy = (item) => {
   if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录后再进行购买！')
-    router.push('/login')
-    return
+    ElMessage.warning("请先登录后再进行购买！");
+    router.push("/login");
+    return;
   }
 
   ElMessageBox.confirm(
     `您确认要以 ￥${item.price} 的价格购买商品“${item.name}”吗？`,
-    '购买确认',
+    "购买确认",
     {
-      confirmButtonText: '确认付款',
-      cancelButtonText: '取消',
-      type: 'warning',
+      confirmButtonText: "确认付款",
+      cancelButtonText: "取消",
+      type: "warning",
     }
-  ).then(async () => {
-    try {
-      const headers = { Authorization: `Bearer ${userStore.token}` }
-      const response = await axios.post(`http://localhost:8080/api/goods/buy/${item.id}`, {}, { headers })
-      if (response.data.code === 200) {
-        ElMessage.success('购买成功！已自动扣款并生成订单。')
-        detailDrawer.value = false // 购买成功后关闭抽屉
-        fetchGoods()
-      } else {
-        ElMessage.error(response.data.message || '购买失败')
+  )
+    .then(async () => {
+      try {
+        const headers = { Authorization: `Bearer ${userStore.token}` };
+        const response = await axios.post(
+          `/api/goods/buy/${item.id}`,
+          {},
+          { headers }
+        );
+        if (response.data.code === 200) {
+          ElMessage.success("购买成功！已自动扣款并生成订单。");
+          detailDrawer.value = false; // 购买成功后关闭抽屉
+          fetchGoods();
+        } else {
+          ElMessage.error(response.data.message || "购买失败");
+        }
+      } catch (err) {
+        ElMessage.error(err.response?.data?.message || "购买过程出错，请重试");
       }
-    } catch (err) {
-      ElMessage.error(err.response?.data?.message || '购买过程出错，请重试')
-    }
-  }).catch(() => {})
-}
+    })
+    .catch(() => {});
+};
 
 // 商品详情与收藏私聊控制
-const detailDrawer = ref(false)
-const selectedGoods = ref(null)
+const detailDrawer = ref(false);
+const selectedGoods = ref(null);
 const detailData = ref({
   favoriteCount: 0,
   isFavorite: false,
-  seller: null
-})
-const loadingDetail = ref(false)
-const togglingFav = ref(false)
+  seller: null,
+});
+const loadingDetail = ref(false);
+const togglingFav = ref(false);
 
 const showDetail = async (item) => {
-  selectedGoods.value = item
-  detailDrawer.value = true
-  loadingDetail.value = true
+  selectedGoods.value = item;
+  detailDrawer.value = true;
+  loadingDetail.value = true;
   try {
-    const headers = userStore.isLoggedIn ? { Authorization: `Bearer ${userStore.token}` } : {}
-    const response = await axios.get(`http://localhost:8080/api/goods/detail/${item.id}`, { headers })
+    const headers = userStore.isLoggedIn
+      ? { Authorization: `Bearer ${userStore.token}` }
+      : {};
+    const response = await axios.get(
+      `/api/goods/detail/${item.id}`,
+      { headers }
+    );
     if (response.data.code === 200) {
-      detailData.value = response.data.data
+      detailData.value = response.data.data;
       if (response.data.data.goods) {
-        selectedGoods.value = response.data.data.goods
+        selectedGoods.value = response.data.data.goods;
       }
     }
   } catch (error) {
-    console.error('获取商品详情失败:', error)
+    console.error("获取商品详情失败:", error);
   } finally {
-    loadingDetail.value = false
+    loadingDetail.value = false;
   }
-}
+};
 
 const toggleFavorite = async () => {
   if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录再进行收藏！')
-    router.push('/login')
-    return
+    ElMessage.warning("请先登录再进行收藏！");
+    router.push("/login");
+    return;
   }
-  togglingFav.value = true
+  togglingFav.value = true;
   try {
-    const headers = { Authorization: `Bearer ${userStore.token}` }
-    const response = await axios.post(`http://localhost:8080/api/favorite/toggle/${selectedGoods.value.id}`, {}, { headers })
+    const headers = { Authorization: `Bearer ${userStore.token}` };
+    let response;
+    if (detailData.value.isFavorite) {
+      response = await axios.delete(
+        `/api/favorite/${selectedGoods.value.id}`,
+        { headers }
+      );
+    } else {
+      response = await axios.post(
+        `/api/favorite/${selectedGoods.value.id}`,
+        {},
+        { headers }
+      );
+    }
+
     if (response.data.code === 200) {
-      detailData.value.isFavorite = !detailData.value.isFavorite
-      detailData.value.favoriteCount += detailData.value.isFavorite ? 1 : -1
-      ElMessage.success(detailData.value.isFavorite ? '收藏成功！' : '已取消收藏')
+      detailData.value.isFavorite = !detailData.value.isFavorite;
+      detailData.value.favoriteCount += detailData.value.isFavorite ? 1 : -1;
+      ElMessage.success(
+        detailData.value.isFavorite ? "收藏成功！" : "已取消收藏"
+      );
+    } else {
+      ElMessage.error(response.data.message || "操作收藏失败");
     }
   } catch (error) {
-    ElMessage.error('操作收藏失败')
+    ElMessage.error(error.response?.data?.message || "操作收藏失败");
   } finally {
-    togglingFav.value = false
+    togglingFav.value = false;
   }
-}
+};
 
 const chatWithSeller = () => {
   if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录再联系卖家！')
-    router.push('/login')
-    return
+    ElMessage.warning("请先登录再联系卖家！");
+    router.push("/login");
+    return;
   }
-  if (selectedGoods.value.sellerId === Number(userStore.userId)) {
-    ElMessage.warning('这是您自己发布的商品哦！')
-    return
+  const sellerId = selectedGoods.value.sellerId || detailData.value.seller?.id;
+  if (!sellerId) {
+    ElMessage.warning("卖家信息加载中，请稍后再试！");
+    return;
   }
-  detailDrawer.value = false
+  if (Number(sellerId) === Number(userStore.userId)) {
+    ElMessage.warning("这是您自己发布的商品哦！");
+    return;
+  }
+  detailDrawer.value = false;
   chatStore.openChat(
-    selectedGoods.value.sellerId,
-    detailData.value.seller?.nickname || detailData.value.seller?.username || '卖家',
+    Number(sellerId),
+    detailData.value.seller?.nickname ||
+      detailData.value.seller?.username ||
+      "卖家",
     selectedGoods.value.id
-  )
-}
+  );
+};
 
 const handleOpenPublish = () => {
   if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录再发布闲置商品！')
-    router.push('/login')
-    return
+    ElMessage.warning("请先登录再发布闲置商品！");
+    router.push("/login");
+    return;
   }
-  publishDialog.value = true
-}
+  publishDialog.value = true;
+};
 
 const submitPublish = () => {
   if (!userStore.isLoggedIn) {
-    ElMessage.warning('登录失效，请先登录！')
-    router.push('/login')
-    return
+    ElMessage.warning("登录失效，请先登录！");
+    router.push("/login");
+    return;
   }
 
   formRef.value.validate(async (valid) => {
-    if (!valid) return
-    publishing.value = true
+    if (!valid) return;
+    publishing.value = true;
     try {
-      const headers = { Authorization: `Bearer ${userStore.token}` }
-      const response = await axios.post('http://localhost:8080/api/goods/publish', publishForm, { headers })
+      const headers = { Authorization: `Bearer ${userStore.token}` };
+      const response = await axios.post(
+        "/api/goods/publish",
+        publishForm,
+        { headers }
+      );
       if (response.data.code === 200) {
-        ElMessage.success('商品发布成功！')
-        publishDialog.value = false
+        ElMessage.success("商品发布成功！");
+        publishDialog.value = false;
         // 重置表单
-        publishForm.name = ''
-        publishForm.price = 99.00
-        publishForm.category = '其它闲置'
-        publishForm.condition = '九成新'
-        publishForm.tradingMethod = '面交/邮寄'
-        publishForm.location = ''
-        publishForm.imageUrl = ''
-        publishForm.description = ''
-        fetchGoods()
+        publishForm.name = "";
+        publishForm.price = 99.0;
+        publishForm.category = "其它闲置";
+        publishForm.condition = "九成新";
+        publishForm.tradingMethod = "面交/邮寄";
+        publishForm.location = "";
+        publishForm.imageUrl = "";
+        publishForm.description = "";
+        fetchGoods();
       } else {
-        ElMessage.error(response.data.message || '发布失败')
+        ElMessage.error(response.data.message || "发布失败");
       }
     } catch (err) {
-      ElMessage.error(err.response?.data?.message || '系统繁忙，请重试')
+      ElMessage.error(err.response?.data?.message || "系统繁忙，请重试");
     } finally {
-      publishing.value = false
+      publishing.value = false;
     }
-  })
-}
+  });
+};
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(date.getDate()).padStart(2, "0")}`;
+};
 
 const logError = (error) => {
-  console.error(error)
-  ElMessage.error('无法连接到后端服务器')
-}
+  console.error(error);
+  ElMessage.error("无法连接到后端服务器");
+};
 
 // 监听 URL 路由中的 detailId，实现点击客服推荐链接自动弹出商品详情抽屉
-watch(() => route.query.detailId, (newId) => {
-  if (newId) {
-    showDetail({ id: Number(newId) })
+watch(
+  () => route.query.detailId,
+  (newId) => {
+    if (newId) {
+      showDetail({ id: Number(newId) });
+    }
   }
-})
+);
 
 onMounted(() => {
-  fetchGoods()
+  fetchGoods();
   if (route.query.detailId) {
-    showDetail({ id: Number(route.query.detailId) })
+    showDetail({ id: Number(route.query.detailId) });
   }
-})
+});
 </script>
 
 <style scoped>
@@ -694,7 +913,7 @@ onMounted(() => {
 .detail-name {
   font-size: 20px;
   font-weight: 700;
-  color: #fff;
+  color: black;
 }
 
 .detail-price {
@@ -752,7 +971,7 @@ onMounted(() => {
 }
 
 .attr-val {
-  color: #fff;
+  color: black;
   font-weight: 600;
 }
 
@@ -782,12 +1001,95 @@ onMounted(() => {
 .seller-nickname {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: black;
 }
 
 .seller-role {
   font-size: 11px;
   color: var(--text-dim);
+}
+
+.review-stats-box {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 12px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.stat-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-display);
+}
+
+.stat-num.highlight {
+  color: #f59e0b;
+}
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.related-goods-list {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.related-card {
+  min-width: 120px;
+  width: 120px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.related-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.related-img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+}
+
+.related-info {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.related-name {
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.related-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #10b981;
 }
 
 .detail-drawer-footer {

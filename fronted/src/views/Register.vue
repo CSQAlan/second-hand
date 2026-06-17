@@ -80,7 +80,7 @@ const handleRegister = () => {
     
     loading.value = true
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/register', {
+      const response = await axios.post('/api/auth/register', {
         username: form.username,
         password: form.password,
         nickname: form.nickname
